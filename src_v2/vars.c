@@ -47,6 +47,7 @@ MPI_Request request;  // The continue directive for non-blocking sends
 
 // Global variables for the grids
 int NTaskWithN;           // The number of tasks that actually have particles
+int last_slice;           // The last slice of the density/force grids (maybe equal to alloc_local)
 int * Slab_to_task;       // The task to which each slice is assigned
 int * Part_to_task;       // The task to which each particle position is assigned
 int * Local_nx_table;     // The number of slices on each of the tasks

@@ -88,8 +88,9 @@ void initialize_ffts(void) {
 
   MPI_Allreduce(Slab_to_task_local, Slab_to_task, Nmesh, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
-  // Add an additional plane
+  // Add an additional plane and identify the last slice
   alloc_slice = Nmesh*(Nmesh/2+1);
+  last_slice = Local_nx*alloc_slice;
   Total_size = alloc_local+alloc_slice;
 
   free(Slab_to_task_local);
@@ -107,7 +108,7 @@ void initialize_parts(void) {
   Local_np = 0;
   Local_p_start = Nsample;
   for (i = 0; i < Nsample; i++) {
-    slab = (i*Nmesh)/Nsample;
+    slab = (int)((double)(i*Nmesh)/(double)Nsample);
     if (Slab_to_task[slab] == ThisTask) {
       Local_np++;
       if (i < Local_p_start) Local_p_start = i;
@@ -1186,11 +1187,11 @@ void displacement_fields(void) {
   if(ThisTask == 0) printf("Fourier transforming displacement gradient...\n");
   for(i = 0; i < 6; i++) {
 #ifdef SINGLE_PRECISION
-    Inverse_plan = fftwf_mpi_plan_dft_c2r_3d(Nmesh,Nmesh,Nmesh,cdigrad[i],digrad[i],MPI_COMM_WORLD,FFTW_ESTIMATE);
+    Inverse_plan = fftwf_mpi_plan_dft_c2r_3d(Nmesh,Nmesh,Nmesh,cdigrad[i],digrad[i],MPI_COMM_WORLD,FFTW_MEASURE);
     fftwf_execute(Inverse_plan);
     fftwf_destroy_plan(Inverse_plan);
 #else
-    Inverse_plan = fftw_mpi_plan_dft_c2r_3d(Nmesh,Nmesh,Nmesh,cdigrad[i],digrad[i],MPI_COMM_WORLD,FFTW_ESTIMATE);
+    Inverse_plan = fftw_mpi_plan_dft_c2r_3d(Nmesh,Nmesh,Nmesh,cdigrad[i],digrad[i],MPI_COMM_WORLD,FFTW_MEASURE);
     fftw_execute(Inverse_plan);
     fftw_destroy_plan(Inverse_plan);
 #endif
@@ -1304,11 +1305,11 @@ void displacement_fields(void) {
 
     // send ZA disp
     MPI_Sendrecv(&(disp[axes][0]),sizeof(float_kind)*2*alloc_slice,MPI_BYTE,LeftTask,10,
-                 &(disp[axes][2*alloc_local]),sizeof(float_kind)*2*alloc_slice,MPI_BYTE,RightTask,10,MPI_COMM_WORLD,&status);
+                 &(disp[axes][2*last_slice]),sizeof(float_kind)*2*alloc_slice,MPI_BYTE,RightTask,10,MPI_COMM_WORLD,&status);
 
     // send 2nd order disp
     MPI_Sendrecv(&(disp2[axes][0]),sizeof(float_kind)*2*alloc_slice,MPI_BYTE,LeftTask,10,
-                 &(disp2[axes][2*alloc_local]),sizeof(float_kind)*2*alloc_slice,MPI_BYTE,RightTask,10,MPI_COMM_WORLD,&status);     
+                 &(disp2[axes][2*last_slice]),sizeof(float_kind)*2*alloc_slice,MPI_BYTE,RightTask,10,MPI_COMM_WORLD,&status);     
   }
       
   // read-out displacements

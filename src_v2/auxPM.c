@@ -330,7 +330,7 @@ void PtoMesh(void) {
   // of the task on the right. Skip over tasks without any slices.
   float_kind * temp_density = (float_kind *)calloc(2*alloc_slice,sizeof(float_kind));
 
-  ierr = MPI_Sendrecv(&(density[2*alloc_local]),2*alloc_slice*sizeof(float_kind),MPI_BYTE,RightTask,0,
+  ierr = MPI_Sendrecv(&(density[2*last_slice]),2*alloc_slice*sizeof(float_kind),MPI_BYTE,RightTask,0,
                       &(temp_density[0]),2*alloc_slice*sizeof(float_kind),MPI_BYTE,LeftTask,0,MPI_COMM_WORLD,&status);
 
   if (NumPart != 0) {
@@ -364,7 +364,12 @@ void Forces(void) {
     iglobal = i+Local_x_start;
     for (j=0;j<(unsigned int)(Nmesh/2+1);j++) {
       kmin = 0;
-      if ((iglobal == 0) && (j == 0)) kmin = 1;
+      if ((iglobal == 0) && (j == 0)) {
+        FN11[0][0] = 0.0; FN11[0][1] = 0.0;
+        FN12[0][0] = 0.0; FN12[0][1] = 0.0;
+        FN13[0][0] = 0.0; FN13[0][1] = 0.0;
+        kmin = 1;
+      }
       for (k=kmin;k<(unsigned int)(Nmesh/2+1);k++) {
 
         unsigned int ind = (i*Nmesh+j)*(Nmesh/2+1)+k;
@@ -373,7 +378,7 @@ void Forces(void) {
           RK    = (double)(k*k+(Nmesh-iglobal)*(Nmesh-iglobal)+j*j);
         } else {
           di[0] = iglobal;
-          RK    = (double)(k*k+iglobal*iglobal+j*j) ;
+          RK    = (double)(k*k+iglobal*iglobal+j*j);
         }
         dj[0] = j;
         dk[0] = k;
@@ -440,13 +445,13 @@ void Forces(void) {
   }*/
 
   ierr = MPI_Sendrecv(&(N11[0]),2*alloc_slice*sizeof(float_kind),MPI_BYTE,LeftTask,0,
-                      &(N11[2*alloc_local]),2*alloc_slice*sizeof(float_kind),MPI_BYTE,RightTask,0,MPI_COMM_WORLD,&status);
+                      &(N11[2*last_slice]),2*alloc_slice*sizeof(float_kind),MPI_BYTE,RightTask,0,MPI_COMM_WORLD,&status);
 
   ierr = MPI_Sendrecv(&(N12[0]),2*alloc_slice*sizeof(float_kind),MPI_BYTE,LeftTask,0,
-                      &(N12[2*alloc_local]),2*alloc_slice*sizeof(float_kind),MPI_BYTE,RightTask,0,MPI_COMM_WORLD,&status);
+                      &(N12[2*last_slice]),2*alloc_slice*sizeof(float_kind),MPI_BYTE,RightTask,0,MPI_COMM_WORLD,&status);
 
   ierr = MPI_Sendrecv(&(N13[0]),2*alloc_slice*sizeof(float_kind),MPI_BYTE,LeftTask,0,
-                      &(N13[2*alloc_local]),2*alloc_slice*sizeof(float_kind),MPI_BYTE,RightTask,0,MPI_COMM_WORLD,&status);
+                      &(N13[2*last_slice]),2*alloc_slice*sizeof(float_kind),MPI_BYTE,RightTask,0,MPI_COMM_WORLD,&status);
 
   return;
 }

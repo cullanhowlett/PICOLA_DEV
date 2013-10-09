@@ -439,7 +439,7 @@ double PowerSpec_Tabulated(double k) {
 
   Delta2 = pow(10.0, logD);
 
-  P = Norm * Delta2 / (4 * M_PI * kold * kold * kold);
+  P = Norm * Delta2 / (4.0 * PI * kold * kold * kold);
 
   return P;
 }
@@ -509,7 +509,7 @@ double TopHatSigma2(double R) {
   F.function = &sigma2_int;
   F.params = &alpha;
      
-  gsl_integration_qag(&F,0,500.0/R,1e-6,1e-4,100000,GSL_INTEG_GAUSS41,w,&result,&error); 
+  gsl_integration_qag(&F,0,1500.0/R,1e-6,1e-4,100000,GSL_INTEG_GAUSS41,w,&result,&error); 
      
   gsl_integration_workspace_free (w);
       
@@ -528,8 +528,8 @@ double sigma2_int(double k, void * params) {
 
   if(kr < 1e-8) return 0;
 
-  w = 3 * (sin(kr) / kr3 - cos(kr) / kr2);
-  x = 4 * PI * k * k * w * w * PowerSpec(k);
+  w = 3.0 * (sin(kr) / kr3 - cos(kr) / kr2);
+  x = 4.0 * PI * k * k * w * w * PowerSpec(k);
 
   return x;
 }
