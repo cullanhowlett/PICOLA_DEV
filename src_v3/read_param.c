@@ -155,16 +155,20 @@ void read_parameterfile(char * fname) {
   addr[nt] = &Origin_z;
   id[nt++] = FLOAT;
 
-  strcpy(tag[nt], "UnitVec_x");
-  addr[nt] = &UnitVec_x;
+  strcpy(tag[nt], "Vec_x");
+  addr[nt] = &Vec_x;
   id[nt++] = FLOAT;
 
-  strcpy(tag[nt], "UnitVec_y");
-  addr[nt] = &UnitVec_y;
+  strcpy(tag[nt], "Vec_y");
+  addr[nt] = &Vec_y;
   id[nt++] = FLOAT;
 
-  strcpy(tag[nt], "UnitVec_z");
-  addr[nt] = &UnitVec_z;
+  strcpy(tag[nt], "Vec_z");
+  addr[nt] = &Vec_z;
+  id[nt++] = FLOAT;
+
+  strcpy(tag[nt], "SolidAngleArea");
+  addr[nt] = &SolidAngleArea;
   id[nt++] = FLOAT;
 #endif
 

@@ -34,7 +34,18 @@ void set_units(void) {
   G = GRAVITY / pow(UnitLength_in_cm, 3) * UnitMass_in_g * pow(UnitTime_in_s, 2);
   Hubble = HUBBLE * UnitTime_in_s;
   Light = LIGHT / UnitLength_in_cm * UnitTime_in_s;
- 
+
+#ifdef LIGHTCONE
+  // Calculate the angle subtended by the solid angle area of the light cone. We'll compare 
+  // the angle between each particle and the lightcone unit vector (also calculated/normalised here)
+  // to this to see whether it is inside the lightcone.
+  double UnitVecNorm = sqrt(fabs(Vec_x)+fabs(Vec_y)+fabs(Vec_z));
+  LightconeAngle = acos(1.0-SolidAngleArea/2.0);
+  UnitVec[0] = rint(Vec_x/fabs(Vec_x))*sqrt(fabs(Vec_x))/UnitVecNorm;
+  UnitVec[1] = rint(Vec_y/fabs(Vec_y))*sqrt(fabs(Vec_y))/UnitVecNorm;
+  UnitVec[2] = rint(Vec_z/fabs(Vec_z))*sqrt(fabs(Vec_z))/UnitVecNorm;
+#endif
+
   return;
 }
 

@@ -172,8 +172,8 @@ int main(int argc, char **argv) {
 
   // We'll flag to see if the particle is inside the lightcone here
 #ifdef LIGHTCONE
-  double dr = Light/Hubble*SphiStd(A,1.0);
-  dr *= dr; 
+  double Rcomov  = Light/Hubble*SphiStd(A,1.0);
+  double Rcomov2 = Rcomov*Rcomov; 
 #endif
     
   for(i=0; i<Local_np; i++) {
@@ -196,13 +196,14 @@ int main(int argc, char **argv) {
         P[coord].Pos[2] = periodic_wrap(k*(Box/(double)Nsample)+P[coord].Dz[2]*Di+P[coord].D2[2]*Di2);
 
 #ifdef LIGHTCONE
-        double dx = P[coord].Pos[0] - Origin_x;
-        double dy = P[coord].Pos[1] - Origin_y;
-        double dz = P[coord].Pos[2] - Origin_z;
-        double dr_part = dx*dx+dy*dy+dz*dz;
+        double Xpart = P[coord].Pos[0] - Origin_x;
+        double Ypart = P[coord].Pos[1] - Origin_y;
+        double Zpart = P[coord].Pos[2] - Origin_z;
+        double Rpart = Xpart*Xpart+Ypart*Ypart+Zpart*Zpart;
  
-        if (dr_part < dr) {
-          P[coord].Flag = 1;
+        if (Rpart <= Rcomov2) {
+          double Apart = acos((Xpart*UnitVec[0]+Ypart*UnitVec[1]+Zpart*UnitVec[2])/Rcomov);
+          if (Apart <= LightconeAngle) P[coord].Flag = 1;
         } else {
           P[coord].Flag = 0; 
         }
@@ -522,10 +523,10 @@ void Drift(double A, double AFF, double AF, double Di) {
   da1=growthD(AFF)-Di;    // change in D
   da2=growthD2(AFF)-growthD2(A); // change in D_{2lpt}
 
-  // We'll flag to see if the particle is inside the lightcone here
 #ifdef LIGHTCONE
-  double dr = Light/Hubble*SphiStd(AFF,1.0);
-  dr *= dr; 
+  // We'll flag to see if the particle is inside the lightcone here
+  double Rcomov  = Light/Hubble*SphiStd(AFF,1.0);
+  double Rcomov2 = Rcomov*Rcomov; 
 #endif    
     
   for(n=0; n<NumPart; n++) {
@@ -538,12 +539,17 @@ void Drift(double A, double AFF, double AF, double Di) {
     P[n].Pos[2] = periodic_wrap(P[n].Pos[2]+subtractLPT*(P[n].Dz[2]*da1+P[n].D2[2]*da2));
 
 #ifdef LIGHTCONE
-    double dx = P[n].Pos[0] - Origin_x;
-    double dy = P[n].Pos[1] - Origin_y;
-    double dz = P[n].Pos[2] - Origin_z;
-    double dr_part = dx*dx+dy*dy+dz*dz;
+    double Xpart = P[coord].Pos[0] - Origin_x;
+    double Ypart = P[coord].Pos[1] - Origin_y;
+    double Zpart = P[coord].Pos[2] - Origin_z;
+    double Rpart = Xpart*Xpart+Ypart*Ypart+Zpart*Zpart;
  
-    if (dr_part < dr) P[n].Flag = 1;
+    if (Rpart <= Rcomov2) {
+      double Apart = acos((Xpart*UnitVec[0]+Ypart*UnitVec[1]+Zpart*UnitVec[2])/Rcomov);
+      if (Apart <= LightconeAngle) P[coord].Flag = 1;
+    } else {
+      P[coord].Flag = 0; 
+    }
 #endif 
   }
 }

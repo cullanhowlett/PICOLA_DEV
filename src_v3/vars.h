@@ -204,12 +204,15 @@ extern unsigned long long TotNumPart;  // The total number of particles in the s
 extern double Box;                     // The edge length of the simulation
 extern double Buffer;                  // The amount of extra memory of each processor to compensate for moving particles
 #ifdef LIGHTCONE
-extern double Origin_x;  // The x-position of the lightcone origin
-extern double Origin_y;  // The y-position of the lightcone origin
-extern double Origin_z;  // The z-position of the lightcone origin
-extern double UnitVec_x; // The unit vector in the x direction (1 means full-range, -1/2 means only negative quadrant, 1/4 means half the positive quadrant etc.)
-extern double UnitVec_y; // The unit vector in the x direction (1 means full-range, -1/2 means only negative quadrant, 1/4 means half the positive quadrant etc.)
-extern double UnitVec_z; // The unit vector in the x direction (1 means full-range, -1/2 means only negative quadrant, 1/4 means half the positive quadrant etc.)
+extern int Vec_x;              // The lightcone vector in the x, y, and z directions (To maintain accuracy we use integers as this is normalised in the code)
+extern int Vec_y;              // For example: (1,0,0) is along the x axis, (1,1,1) means we take one step in each direction (resulting in a vector at 45 degrees to all three axes),
+extern int Vec_z;              //              (25, -10, 0) means we are in the z plane and for every step in the negative-y direction we take 2.5 in the x direction etc.
+extern double Origin_x;        // The x-position of the lightcone origin
+extern double Origin_y;        // The y-position of the lightcone origin
+extern double Origin_z;        // The z-position of the lightcone origin
+extern double UnitVec[3];      // The normalised unit vector (without including the comoving distance) of the lightcone
+extern double LightconeAngle;  // The angle subtended by the Lightcone's solid angle area.
+extern double SolidAngleArea;  // The area covered by the lightcone (in PI-steradians, i.e., full-sky = 4.0)
 #endif
 
 // 2LPT specific
