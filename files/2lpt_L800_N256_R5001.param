@@ -1,0 +1,73 @@
+
+Nmesh        256         % This is the size of the FFT grid used to 
+                         % compute the displacement field. One
+                         % should have Nmesh >= Nsample.
+
+Nsample      256         % sets the maximum k that the code uses,
+                         % i.e. this effectively determines the
+                         % Nyquist frequency that the code assumes,
+                         % k_Nyquist = 2*PI/Box * Nsample/2
+                         % Normally, one chooses Nsample such that
+                         % Ntot =  Nsample^3, where Ntot is the
+                         % total number of particles
+ 
+Box          800.0       % Periodic box size of simulation
+
+
+FileBase                    ics_PICOLA_corr_L800_N256_R5001                                 % Base-filename of output files
+OutputDir                   /users/manera/lustre/manera/NBody/PICOLA/L800_N256_R5001   % Directory for output
+NumFilesWrittenInParallel   4                                                           % limits the number of files that are
+                                                                                        % written in parallel when outputting
+
+UseCOLA        1       % Whether or not to use the COLA method (1=true, 0=false)
+%nsteps         10
+Buffer         1.5
+Omega          0.25    % Total matter density  (at z=0)
+%OmegaLambda    0.75    % Cosmological constant (at z=0)
+OmegaBaryon    0.04    % Baryon density        (at z=0)
+HubbleParam    0.7     % Hubble paramater (may be used for power spec parameterization)
+Sigma8         0.8     % power spectrum normalization
+%Fnl            -400    % The value of Fnl (if needed)
+
+Init_Redshift    9.0   % The redshift to begin timestepping from (redshift = 9 works well for COLA)
+%Final_Redshift   0.0
+OutputRedshiftFile   /users/cullanh/mock_catalogues/PICOLA/files/output_redshifts.dat
+%Fnl_Redshift     49.0  % The redshift to apply the nongaussian potential (if requested)
+
+ShapeGamma       0.21     % only needed for Efstathiou power spectrum 
+PrimordialIndex  1.0      % may be used to tilt the primordial index (if != 1.0 and nongaussian, generic flag required)
+
+Seed             5001     %  Seed for IC-generator
+
+SphereMode       0     % if "1" only modes with |k| < k_Nyquist are
+                       % used (i.e. a sphere in k-space), otherwise modes with
+                       % |k_x|,|k_y|,|k_z| < k_Nyquist are used
+                       % (i.e. a cube in k-space)
+          
+                       % "0" not use power spectrum only transfer file
+WhichSpectrum    2     % "1" selects Eisenstein & Hu spectrum,
+		       % "2" selects a tabulated power spectrum in
+                       % the file 'FileWithInputSpectrum'
+                       % otherwise, Efstathiou parametrization is used
+                       % Non-Gaussian case requires "0" value (we use the Tranfer Function instead)
+
+WhichTransfer    0     % "0" not use transfer function only power spectrum
+                       % "1" selects EH Transfer function 
+                       % "2" selects Transfer function from Transfer file
+                       % otherwise Efstathiou Tk 
+                       % For Non-Gaussian models this is required (rather than the power spectrum) 
+
+                  
+FileWithInputSpectrum  /users/cullanh/mock_catalogues/PICOLA/files/input_spectrum_LasDamas.dat    % filename of tabulated input spectrum (if used)
+                                                                                        % expecting k Pk 
+
+FileWithInputTransfer  /users/cullanh/mock_catalogues/PICOLA/files/input_transfer.dat   % filename of tabulated transfer function (if used)
+                                                                                        % expecting k and T (unnormalized)
+
+%FileWithInputKernel    /users/cullanh/mock_catalogues/PICOLA/files/input_kernel_ortog.txt   % the input kernel for generic non-gaussianity
+                                                                                              
+UnitLength_in_cm                3.085678e24       % defines length unit of output (in cm/h) 
+UnitMass_in_g                   1.989e43          % defines mass unit of output (in g/cm)
+UnitVelocity_in_cm_per_s        1e5               % defines velocity unit of output (in cm/sec)
+InputSpectrum_UnitLength_in_cm  3.085678e24       % defines length unit of tabulated input spectrum in cm/h. 
+                                                  % Note: This can be chosen different from UnitLength_in_cm
