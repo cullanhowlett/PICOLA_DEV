@@ -127,7 +127,7 @@ endif
 endif
 
 ifeq ($(MACHINE),DARWIN)
-  CC = mpiiCC	
+  CC = mpiicc	
 ifdef SINGLE_PRECISION
   FFTW_INCL = -I/usr/local/Cluster-Apps.sandybridge/fftw/intel/3.3.3/include
   FFTW_LIBS = -L/usr/local/Cluster-Apps.sandybridge/fftw/intel/3.3.3/lib -lfftw3f_mpi -lfftw3f
