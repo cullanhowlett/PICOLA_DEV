@@ -20,10 +20,8 @@ NumFilesWrittenInParallel   4                                                   
                                                                                         % written in parallel when outputting
 
 UseCOLA        1       % Whether or not to use the COLA method (1=true, 0=false)
-%nsteps         10
 Buffer         1.5
 Omega          0.25    % Total matter density  (at z=0)
-%OmegaLambda    0.75    % Cosmological constant (at z=0)
 OmegaBaryon    0.04    % Baryon density        (at z=0)
 HubbleParam    0.7     % Hubble paramater (may be used for power spec parameterization)
 Sigma8         0.8     % power spectrum normalization
@@ -41,7 +39,6 @@ Sigma8         0.8     % power spectrum normalization
 %Nrep_pos_z   0
 
 Init_Redshift    9.0   % The redshift to begin timestepping from (redshift = 9 works well for COLA)
-%Final_Redshift   0.0
 OutputRedshiftFile   /users/cullanh/mock_catalogues/PICOLA/files/output_redshifts.dat
 %Fnl_Redshift     49.0  % The redshift to apply the nongaussian potential (if requested)
 
