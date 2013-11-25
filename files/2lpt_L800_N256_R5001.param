@@ -14,8 +14,8 @@ Nsample      256         % sets the maximum k that the code uses,
 Box          800.0       % Periodic box size of simulation
 
 
-FileBase                    ics_PICOLA_corr_L800_N256_R5001                                 % Base-filename of output files
-OutputDir                   /users/manera/lustre/manera/NBody/PICOLA/L800_N256_R5001   % Directory for output
+FileBase                    ics_PICOLA_corr_L800_N256_R5001                              % Base-filename of output files
+OutputDir                   /users/manera/lustre/manera/NBody/PICOLA_previous/L800_N256_R5001/   % Directory for output
 NumFilesWrittenInParallel   4                                                           % limits the number of files that are
                                                                                         % written in parallel when outputting
 
@@ -28,6 +28,17 @@ OmegaBaryon    0.04    % Baryon density        (at z=0)
 HubbleParam    0.7     % Hubble paramater (may be used for power spec parameterization)
 Sigma8         0.8     % power spectrum normalization
 %Fnl            -400    % The value of Fnl (if needed)
+
+%lIGHTCONE STUFF
+%Origin_x     0.0
+%Origin_y     400.0
+%Origin_z     400.0
+%Nrep_neg_x   0
+%Nrep_pos_x   20
+%Nrep_neg_y   0
+%Nrep_pos_y   0
+%Nrep_neg_z   0
+%Nrep_pos_z   0
 
 Init_Redshift    9.0   % The redshift to begin timestepping from (redshift = 9 works well for COLA)
 %Final_Redshift   0.0

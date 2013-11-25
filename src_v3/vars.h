@@ -166,7 +166,7 @@ extern float * ZA[3];      // Vectors to hold the Zeldovich displacements before
 extern float * LPT[3];     // Vectors to hold the 2LPT displacements before particle initialisation
 extern struct part_data { 
 #ifdef LIGHTCONE
-  int Flag;                // A flag to say whether or not a given particle is within the lightcone
+  int Flag;                // A flag to say whether or not a given particle has left the lightcone
 #endif
   //unsigned long long ID;   // The Particle ID
   float Dz[3];             // The Zeldovich displacment of the particle in the X, Y and Z directions
@@ -180,7 +180,7 @@ extern float_kind * ZA[3];    // Vectors to hold the Zeldovich displacements bef
 extern float_kind * LPT[3];   // Vectors to hold the 2LPT displacements before particle initialisation
 extern struct part_data {
 #ifdef LIGHTCONE
-  int Flag;                   // A flag to say whether or not a given particle is within the lightcone
+  int Flag;                   // A flag to say whether or not a given particle has left the lightcone
 #endif
   //unsigned long long ID;      // The particle ID
   float_kind Dz[3];           // The Zeldovich displacment of the particle in the X, Y and Z directions
@@ -204,15 +204,18 @@ extern unsigned long long TotNumPart;  // The total number of particles in the s
 extern double Box;                     // The edge length of the simulation
 extern double Buffer;                  // The amount of extra memory of each processor to compensate for moving particles
 #ifdef LIGHTCONE
-extern int Vec_x;              // The lightcone vector in the x, y, and z directions (To maintain accuracy we use integers as this is normalised in the code)
-extern int Vec_y;              // For example: (1,0,0) is along the x axis, (1,1,1) means we take one step in each direction (resulting in a vector at 45 degrees to all three axes),
-extern int Vec_z;              //              (25, -10, 0) means we are in the z plane and for every step in the negative-y direction we take 2.5 in the x direction etc.
-extern double Origin_x;        // The x-position of the lightcone origin
-extern double Origin_y;        // The y-position of the lightcone origin
-extern double Origin_z;        // The z-position of the lightcone origin
-extern double UnitVec[3];      // The normalised unit vector (without including the comoving distance) of the lightcone
-extern double LightconeAngle;  // The angle subtended by the Lightcone's solid angle area.
-extern double SolidAngleArea;  // The area covered by the lightcone (in PI-steradians, i.e., full-sky = 4.0)
+extern int * repflag;         // A flag to say whether we need to check inside a given replicate
+extern int Nrep_neg_x;        // The number of replicated boxes in the negative x direction
+extern int Nrep_neg_y;        // The number of replicated boxes in the negative y direction
+extern int Nrep_neg_z;        // The number of replicated boxes in the negative z direction
+extern int Nrep_pos_x;        // The number of replicated boxes in the positive x direction
+extern int Nrep_pos_y;        // The number of replicated boxes in the positive y direction
+extern int Nrep_pos_z;        // The number of replicated boxes in the positive z direction
+extern int Nrep_neg_max[3];   // The maximum number of replicated boxes in the negative directions
+extern int Nrep_pos_max[3];   // The maximum number of replicated boxes in the positive directions
+extern double Origin_x;       // The x-position of the lightcone origin
+extern double Origin_y;       // The y-position of the lightcone origin
+extern double Origin_z;       // The z-position of the lightcone origin
 #endif
 
 // 2LPT specific

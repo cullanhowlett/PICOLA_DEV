@@ -135,7 +135,7 @@ extern float * Disp[3];    // Vectors to hold the particle displacements each ti
 extern float * ZA[3];      // Vectors to hold the Zeldovich displacements before particle initialisation
 extern float * LPT[3];     // Vectors to hold the 2LPT displacements before particle initialisation
 extern struct part_data { 
-  unsigned long long ID;   // The Particle ID
+  unsigned int ID;   // The Particle ID
   float Dz[3];             // The Zeldovich displacment of the particle in the X, Y and Z directions
   float D2[3];             // The 2LPT displacment of the particle in the X, Y and Z directions
   float Pos[3];            // The position of the particle in the X, Y and Z directions
@@ -146,7 +146,7 @@ extern float_kind * Disp[3];  // vectors to hold the particle displacements each
 extern float_kind * ZA[3];    // Vectors to hold the Zeldovich displacements before particle initialisation
 extern float_kind * LPT[3];   // Vectors to hold the 2LPT displacements before particle initialisation
 extern struct part_data {
-  unsigned long long ID;      // The particle ID
+  unsigned int ID;      // The particle ID
   float_kind Dz[3];           // The Zeldovich displacment of the particle in the X, Y and Z directions
   float_kind D2[3];           // The 2LPT displacment of the particle in the X, Y and Z directions
   float_kind Pos[3];          // The position of the particle in the X, Y and Z directions

@@ -509,7 +509,7 @@ double TopHatSigma2(double R) {
   F.function = &sigma2_int;
   F.params = &alpha;
      
-  gsl_integration_qag(&F,0,1500.0/R,1e-6,1e-4,100000,GSL_INTEG_GAUSS41,w,&result,&error); 
+  gsl_integration_qag(&F,0,500.0/R,1e-6,1e-4,100000,GSL_INTEG_GAUSS41,w,&result,&error); 
      
   gsl_integration_workspace_free (w);
       

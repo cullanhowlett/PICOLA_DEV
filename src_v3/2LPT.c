@@ -33,18 +33,6 @@ void set_units(void) {
   UnitTime_in_s = UnitLength_in_cm / UnitVelocity_in_cm_per_s;
   G = GRAVITY / pow(UnitLength_in_cm, 3) * UnitMass_in_g * pow(UnitTime_in_s, 2);
   Hubble = HUBBLE * UnitTime_in_s;
-  Light = LIGHT / UnitLength_in_cm * UnitTime_in_s;
-
-#ifdef LIGHTCONE
-  // Calculate the angle subtended by the solid angle area of the light cone. We'll compare 
-  // the angle between each particle and the lightcone unit vector (also calculated/normalised here)
-  // to this to see whether it is inside the lightcone.
-  double UnitVecNorm = sqrt(fabs(Vec_x)+fabs(Vec_y)+fabs(Vec_z));
-  LightconeAngle = acos(1.0-SolidAngleArea/2.0);
-  UnitVec[0] = rint(Vec_x/fabs(Vec_x))*sqrt(fabs(Vec_x))/UnitVecNorm;
-  UnitVec[1] = rint(Vec_y/fabs(Vec_y))*sqrt(fabs(Vec_y))/UnitVecNorm;
-  UnitVec[2] = rint(Vec_z/fabs(Vec_z))*sqrt(fabs(Vec_z))/UnitVecNorm;
-#endif
 
   return;
 }
@@ -69,7 +57,7 @@ void initialize_ffts(void) {
   if(ThisTask == 0) {
     printf("\nLocal nx\n---------------------\n");
     for(i = 0; i < NTask; i++) printf("Task = %d: Local_nx = %d\n", i, Local_nx_table[i]);
-    printf("---------------------\n\n");
+    printf("---------------------\n");
     fflush(stdout);
   }
 
@@ -228,7 +216,7 @@ void displacement_fields(void) {
 
   gsl_rng_set(random_generator, Seed);
 
-  if(!(seedtable = (unsigned int *)malloc(Nmesh * Nmesh * sizeof(unsigned int)))) FatalError(30);
+  if(!(seedtable = (unsigned int *)malloc(Nmesh * Nmesh * sizeof(unsigned int)))) FatalError("2LPT.c", 219);
 
   for(i = 0; i < Nmesh / 2; i++) {
     for(j = 0; j < i; j++)     seedtable[i * Nmesh + j] = (unsigned int)(0x7fffffff * gsl_rng_uniform(random_generator));
@@ -534,7 +522,7 @@ void displacement_fields(void) {
       if(ThisTask == 0) printf("Adjusting ker0 = - (kerA + kerB), ker0=%f, kerA=%f, kerB=%f\n", ker0,kerA,kerB);
     } else {
       if(ThisTask == 0) printf("\nERROR: ker0 + kerA + kerB does not equal 0\n"); 
-      FatalError(31);
+      FatalError("2LPT.c", 525);
     }
 
     if(ThisTask == 0) printf("Values: %lf %lf %lf %lf\n",kerCoef,ker0,kerA,kerB);

@@ -79,7 +79,7 @@ double growthDtemp(double a) {
 // Q\equiv a^3 H(a)/H0
 // ===================
 double Qfactor(double a) { 
-  return sqrt(Omega/(a*a*a)+1.0-Omega)*a*a*a;
+  return sqrt(Omega/(a*a*a)+(1.0-Omega))*a*a*a;
 }
 
 // Second order growth factor

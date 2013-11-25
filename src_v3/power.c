@@ -77,7 +77,7 @@ void read_transfer_table(void) {
 
   if(!(fd = fopen(buf, "r"))) {
     if (ThisTask == 0) printf("\nERROR: Can't read input transfer function  in file '%s'.\n\n", buf);
-    FatalError(10);
+    FatalError("power.c", 80);
   }
 
   NTransferTable = 0;
@@ -102,7 +102,7 @@ void read_transfer_table(void) {
 
   if(!(fd = fopen(buf, "r"))) {
     if (ThisTask == 0) printf("\nERROR: Can't read input transfer function in file '%s'.\n\n", buf);
-    FatalError(11);
+    FatalError("power.c", 105);
   }
 
   NTransferTable = 0;
@@ -127,7 +127,7 @@ void read_transfer_table(void) {
 
   if(TransferTable[0].logk >= -4.6 ) {
     if (ThisTask == 0) printf("\nERROR: klower may be too large to normalize transfer function.\n\n");
-    //FatalError(12);  
+    //FatalError("power.c", 130);  
   }
   if(TransferTable[NTransferTable].logk <= log10(500./8.)) {
     if (ThisTask == 0) {
@@ -207,7 +207,7 @@ double TransferFunc_Tabulated(double k) {
 
   dlogk = TransferTable[binhigh].logk - TransferTable[binlow].logk;
 
-  if(dlogk == 0) FatalError(13);
+  if(dlogk == 0) FatalError("power.c", 210);
 
   u = (logk - TransferTable[binlow].logk) / dlogk;
 
@@ -274,7 +274,7 @@ void read_power_table(void) {
 
   if(!(fd = fopen(buf, "r"))) {
     if (ThisTask == 0) printf("\nERROR: Can't read input power spectrum in file '%s'.\n\n", buf);
-    FatalError(14);
+    FatalError("power.c", 277);
   }
 
   NPowerTable = 0;
@@ -299,7 +299,7 @@ void read_power_table(void) {
 
   if(!(fd = fopen(buf, "r"))) {
     if (ThisTask == 0) printf("\nERROR: Can't read input power spectrum in file '%s'.\n\n", buf);
-    FatalError(15);
+    FatalError("power.c", 302);
   }
 
   NPowerTable = 0;
@@ -311,7 +311,6 @@ void read_power_table(void) {
       PowerTable[NPowerTable].logP = log10(p);
       NPowerTable++;
 
-      k = pow(10.0,k);
       k /= (InputSpectrum_UnitLength_in_cm/3.085678e24); // convert to h/Mpc
 
       if (k < kmin) kmin = k;
@@ -329,7 +328,7 @@ void read_power_table(void) {
 
   if((kmin > k_fundamental) || (kmax < k_Nyquist)) {
     if (ThisTask == 0) printf("\nERROR: [kmin, kmax] = [%lf,%lf] h/Mpc are not sufficient to cover [k_fundamental, k_nyquist] = [%lf,%lf] h/Mpc.\n\n",kmin,kmax,k_fundamental,k_Nyquist);
-    FatalError(16);
+    FatalError("power.c", 331);
   }
 
   // Sort by k
@@ -341,7 +340,7 @@ void read_power_table(void) {
 
   if(PowerTable[0].logk >= -4.6 ) {
     if (ThisTask == 0) printf("\nERROR: klower may be too large to normalize power.\n\n");
-    FatalError(17);  
+    //FatalError("power.c", 343);  
   }
   if(PowerTable[NTransferTable].logk <= log10(500./8.)) {
     if (ThisTask == 0) {
@@ -424,7 +423,7 @@ double PowerSpec_Tabulated(double k) {
 
   dlogk = PowerTable[binhigh].logk - PowerTable[binlow].logk;
 
-  if(dlogk == 0) FatalError(18);
+  if(dlogk == 0) FatalError("power.c", 426);
 
   u = (logk - PowerTable[binlow].logk) / dlogk;
 

@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
       fprintf(stdout, "Call with <ParameterFile>\n");
     }
     ierr = MPI_Finalize();
-    exit(0);
+    exit(1);
   }
    
   // Read the run parameters and setup code
@@ -54,6 +54,10 @@ int main(int argc, char **argv) {
 
   read_parameterfile(argv[1]);
   read_outputs();
+  set_units();
+#ifdef LIGHTCONE
+  set_lightcone();
+#endif
   
   if (UseCOLA == 1){
     subtractLPT = 1; 
@@ -87,7 +91,7 @@ int main(int argc, char **argv) {
 #ifndef GAUSSIAN
     printf("  F_nl Redshift  = %lf\n",Fnl_Redshift);
 #endif
-    printf("Simulation:\n");
+    printf("\nSimulation:\n");
     printf("  Nmesh = %d\n", Nmesh);
     printf("  Nsample = %d\n", Nsample);
     printf("  Boxsize = %lf\n", Box);
@@ -117,16 +121,21 @@ int main(int argc, char **argv) {
         break;
     }      
     if (UseCOLA) {
-      printf("  Using COLA method\n\n");
+      printf("  Using COLA method\n");
     } else {
       printf("  Using Standard PM method\n");
     }
-    printf("Outputs:\n");
+#ifdef LIGHTCONE
+    printf("\nLightcone:\n");
+    printf("  Maximum Comoving Radius = %lf\n", Light/Hubble*SphiStd(1.0/(1.0+OutputList[0].Redshift),1.0));
+    printf("  Origin (x, y, z) = %lf, %lf, %lf\n", Origin_x, Origin_y, Origin_z);
+    printf("  Nrep_min (x, y, z) = %d (%lf Mpc/h), %d (%lf Mpc/h), %d (%lf Mpc/h)\n", Nrep_neg_x, -Nrep_neg_x*Box-Origin_x, Nrep_neg_y, -Nrep_neg_y*Box-Origin_y, Nrep_neg_z, -Nrep_neg_z*Box-Origin_z);
+    printf("  Nrep_max (x, y, z) = %d (%lf Mpc/h), %d (%lf Mpc/h), %d (%lf Mpc/h)\n", Nrep_pos_x, (Nrep_pos_x+1)*Box-Origin_x, Nrep_pos_y, (Nrep_pos_y+1)*Box-Origin_y, Nrep_pos_z, (Nrep_pos_z+1)*Box-Origin_z);
+#endif
+    printf("\nOutputs:\n");
     for (i=0; i<Noutputs; i++) printf("  Redshift = %lf, Nsteps = %d\n", OutputList[i].Redshift, OutputList[i].Nsteps);
     fflush(stdout);
   }   
-
-  set_units();
 
   if (ThisTask == 0) {
     printf("\nInitialising Transfer Function/Power Spectrum\n");
@@ -153,7 +162,7 @@ int main(int argc, char **argv) {
   double A=1.0/(1.0+Init_Redshift);  // This is the scale factor which we'll be advancing below.
   double Di=growthD(A);              // initial growth factor
   double Di2=growthD2(A);            // initial 2nd order growth factor  
-  double Dv=DprimeQ(A);          // T[D_{za}]=dD_{za}/dy
+  double Dv=DprimeQ(A);              // T[D_{za}]=dD_{za}/dy
   double Dv2=growthD2v(A);           // T[D_{2lpt}]=dD_{2lpt}/dy
 
   // A is the scale factor of the particle positions.
@@ -169,13 +178,6 @@ int main(int argc, char **argv) {
   // Generate the initial particle positions and velocities
   // If subtractLPT = 0 (non-COLA), then velocity is ds/dy, which is simply the 2LPT IC.
   // Else set vel = 0 if we subtract LPT. This is the same as the action of the operator L_- from TZE, as initial velocities are in 2LPT.
-
-  // We'll flag to see if the particle is inside the lightcone here
-#ifdef LIGHTCONE
-  double Rcomov  = Light/Hubble*SphiStd(A,1.0);
-  double Rcomov2 = Rcomov*Rcomov; 
-#endif
-    
   for(i=0; i<Local_np; i++) {
     for (j=0; j<Nsample; j++) {
       for (k=0; k<Nsample; k++) {
@@ -194,20 +196,6 @@ int main(int argc, char **argv) {
         P[coord].Pos[0] = periodic_wrap((i+Local_p_start)*(Box/(double)Nsample)+P[coord].Dz[0]*Di+P[coord].D2[0]*Di2);
         P[coord].Pos[1] = periodic_wrap(j*(Box/(double)Nsample)+P[coord].Dz[1]*Di+P[coord].D2[1]*Di2);
         P[coord].Pos[2] = periodic_wrap(k*(Box/(double)Nsample)+P[coord].Dz[2]*Di+P[coord].D2[2]*Di2);
-
-#ifdef LIGHTCONE
-        double Xpart = P[coord].Pos[0] - Origin_x;
-        double Ypart = P[coord].Pos[1] - Origin_y;
-        double Zpart = P[coord].Pos[2] - Origin_z;
-        double Rpart = Xpart*Xpart+Ypart*Ypart+Zpart*Zpart;
- 
-        if (Rpart <= Rcomov2) {
-          double Apart = acos((Xpart*UnitVec[0]+Ypart*UnitVec[1]+Zpart*UnitVec[2])/Rcomov);
-          if (Apart <= LightconeAngle) P[coord].Flag = 1;
-        } else {
-          P[coord].Flag = 0; 
-        }
-#endif 
       }
     }
   }
@@ -217,10 +205,12 @@ int main(int argc, char **argv) {
     free(LPT[i]);
   }
 
-  // If we want to output at the initial redshift this is where we do it (it is tricky to compare
-  // floating point numbers due to rounding errors point numbers so instead we see whether they are close)
-  // =====================================================================================================
-  if (((Init_Redshift-OutputList[0].Redshift)/Init_Redshift <= 1.0E-6) || (OutputList[0].Redshift < 1.0e-6)) {
+  // If we want to output or start the lightcone at the initial redshift this is where we do it (it is tricky to compare
+  // floating point numbers due to rounding errors so instead we see whether they are close)
+  // ===================================================================================================================
+  if (((Init_Redshift-OutputList[0].Redshift)/Init_Redshift <= 1.0E-6) || (Init_Redshift <= 1.0e-6)) {
+
+#ifndef LIGHTCONE
 
     // Output particles.
     if (ThisTask == 0) {
@@ -236,6 +226,8 @@ int main(int argc, char **argv) {
 
     // If this is the only output timestep then simply skip to the end
     if(Noutputs == 1) goto finalize;
+
+#endif
 
     NoutputStart++;
   }
@@ -274,7 +266,11 @@ int main(int argc, char **argv) {
 
   // Loop over all the timesteps in the timestep list
   // ================================================
+#ifdef LIGHTCONE
+  for (i=NoutputStart;i<Noutputs;i++) {
+#else
   for (i=NoutputStart;i<=Noutputs;i++) {
+#endif
 
     int nsteps=0;
     double ao=0;
@@ -311,6 +307,12 @@ int main(int argc, char **argv) {
         fflush(stdout);
       }
 
+      /**********************************************************************************************/
+      // If we wanted to interpolate the lightcone velocities we could put section currently in the // 
+      // Drift subroutine here. This would allow us the have the velocities at AF and AFF which we  //
+      // can use to invert the previous drift step and get the particle positions at AF and AFF     //                                                                                             //
+      /**********************************************************************************************/
+
       // Half timestep for kick at output redshift to bring the velocities and positions to the same time
       if ((timeStep == 0) && (i != NoutputStart)) {
         AF=A; 
@@ -326,10 +328,12 @@ int main(int argc, char **argv) {
 
       Kick(AI,AF,A,Di);
 
+#ifndef LIGHTCONE
+
       // If we are at an output timestep we modify the velocities and output the
       // particles. Then, if we are not yet at the end of the simulation, we update  
-      // the velocity again up to the middle of the timestep as per the usual KDK method.
-      // ================================================================================
+      // the velocity again up to the middle of the next timestep as per the usual KDK method.
+      // =====================================================================================
       if ((timeStep == 0) && (i != NoutputStart)) {
 
         if (ThisTask == 0) {
@@ -368,6 +372,8 @@ int main(int argc, char **argv) {
         Kick(AI,AF,A,Di);      
       }
 
+#endif
+
       for (j=0; j<3; j++) free(Disp[j]);
 
       // Drift the particle positions
@@ -381,7 +387,16 @@ int main(int argc, char **argv) {
       if (stepDistr == 1) AFF=A*exp(da);
       if (stepDistr == 2) AFF=AofTime(CosmoTime(A)+da);
 
+#ifdef LIGHTCONE
+      if (i == Noutputs-1) {
+        Drift_Lightcone(A,AFF,AF,Di,timeStep);
+      } else {
+        Drift(A,AFF,AF,Di);
+      }
+#else
       Drift(A,AFF,AF,Di);
+#endif
+
 
       // Step in time
       // ================
@@ -401,7 +416,9 @@ int main(int argc, char **argv) {
 
   // Here is the last little bit
   // ===========================
+#ifndef LIGHTCONE
   finalize:
+#endif
 
   if (ThisTask == 0) {
     printf("Finishing up\n");
@@ -420,6 +437,9 @@ int main(int argc, char **argv) {
   free(Local_np_table);
 #ifdef GENERIC_FNL
   free(KernelTable);
+#endif
+#ifdef LIGHTCONE
+  free(repflag);
 #endif
 #ifndef MEMORY_MODE
   free(density);
@@ -500,7 +520,7 @@ void Kick(double AI, double AF, double A, double Di) {
   ierr = MPI_Allreduce(MPI_IN_PLACE,&sumy,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   ierr = MPI_Allreduce(MPI_IN_PLACE,&sumz,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);  
     
-  sumx /= (double)TotNumPart;  // We will subtract these below to conserve momentum. 
+  sumx /= (double)TotNumPart;  // We will subtract these to conserve momentum. 
   sumy /= (double)TotNumPart;  // Should be conserved, but just in case 3-linear interpolation makes a problem.
   sumz /= (double)TotNumPart;  // Never checked whether this makes a difference.
 }
@@ -508,6 +528,7 @@ void Kick(double AI, double AF, double A, double Di) {
 // Drifting the particle positions
 // ===============================
 void Drift(double A, double AFF, double AF, double Di) {
+
   unsigned int n;
   double dyyy;
   double da1,da2;
@@ -523,12 +544,6 @@ void Drift(double A, double AFF, double AF, double Di) {
   da1=growthD(AFF)-Di;    // change in D
   da2=growthD2(AFF)-growthD2(A); // change in D_{2lpt}
 
-#ifdef LIGHTCONE
-  // We'll flag to see if the particle is inside the lightcone here
-  double Rcomov  = Light/Hubble*SphiStd(AFF,1.0);
-  double Rcomov2 = Rcomov*Rcomov; 
-#endif    
-    
   for(n=0; n<NumPart; n++) {
     P[n].Pos[0] += (P[n].Vel[0]-sumx)*dyyy;
     P[n].Pos[1] += (P[n].Vel[1]-sumy)*dyyy;
@@ -537,20 +552,6 @@ void Drift(double A, double AFF, double AF, double Di) {
     P[n].Pos[0] = periodic_wrap(P[n].Pos[0]+subtractLPT*(P[n].Dz[0]*da1+P[n].D2[0]*da2));
     P[n].Pos[1] = periodic_wrap(P[n].Pos[1]+subtractLPT*(P[n].Dz[1]*da1+P[n].D2[1]*da2));
     P[n].Pos[2] = periodic_wrap(P[n].Pos[2]+subtractLPT*(P[n].Dz[2]*da1+P[n].D2[2]*da2));
-
-#ifdef LIGHTCONE
-    double Xpart = P[coord].Pos[0] - Origin_x;
-    double Ypart = P[coord].Pos[1] - Origin_y;
-    double Zpart = P[coord].Pos[2] - Origin_z;
-    double Rpart = Xpart*Xpart+Ypart*Ypart+Zpart*Zpart;
- 
-    if (Rpart <= Rcomov2) {
-      double Apart = acos((Xpart*UnitVec[0]+Ypart*UnitVec[1]+Zpart*UnitVec[2])/Rcomov);
-      if (Apart <= LightconeAngle) P[coord].Flag = 1;
-    } else {
-      P[coord].Flag = 0; 
-    }
-#endif 
   }
 }
 
@@ -559,12 +560,9 @@ void Drift(double A, double AFF, double AF, double Di) {
 void Output(double A, double Dv, double Dv2) {
 
   FILE * fp; 
-  size_t bytes;
   char buf[300];
-  int k, pc, dummy, blockmaxlen;
   int nprocgroup, groupTask, masterTask;
   unsigned int n;
-  float * block;
   double Z = (1.0/A)-1.0;
   double fac = Hubble/pow(A,1.5);
   double lengthfac = UnitLength_in_cm/3.085678e24;     // Convert positions to Mpc/h
@@ -572,6 +570,10 @@ void Output(double A, double Dv, double Dv2) {
 
   // Remember to add the ZA and 2LPT velocities back on and convert to PTHalos velocity units
 #ifdef GADGET_STYLE
+  size_t bytes;
+  int k, pc, dummy, blockmaxlen;
+  float * block;
+
   for (n=0; n<NumPart; n++) {
     P[n].Pos[0] *= lengthfac;
     P[n].Pos[1] *= lengthfac;
@@ -592,7 +594,7 @@ void Output(double A, double Dv, double Dv2) {
         sprintf(buf, "%s/%s_z%dp%03d.%d", OutputDir, FileBase, (int)Z, (int)rint((Z-(int)Z)*1000), ThisTask);
         if(!(fp = fopen(buf, "w"))) {
           printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-          FatalError(50);
+          FatalError("main.c", 597);
         }
 #ifdef GADGET_STYLE
         // Gadget header stuff
@@ -663,11 +665,12 @@ void Output(double A, double Dv, double Dv2) {
         free(block);   
 #else
         for(n=0; n<NumPart; n++){
-          P_vel[0] = fac*(P[n].Vel[0]-sumx+(P[n].Dz[0]*Dv+P[n].D2[0]*Dv2)*subtractLPT);
-          P_vel[1] = fac*(P[n].Vel[1]-sumy+(P[n].Dz[1]*Dv+P[n].D2[1]*Dv2)*subtractLPT);
-          P_vel[2] = fac*(P[n].Vel[2]-sumz+(P[n].Dz[2]*Dv+P[n].D2[2]*Dv2)*subtractLPT);
+          double P_Vel[3];
+          P_Vel[0] = fac*(P[n].Vel[0]-sumx+(P[n].Dz[0]*Dv+P[n].D2[0]*Dv2)*subtractLPT);
+          P_Vel[1] = fac*(P[n].Vel[1]-sumy+(P[n].Dz[1]*Dv+P[n].D2[1]*Dv2)*subtractLPT);
+          P_Vel[2] = fac*(P[n].Vel[2]-sumz+(P[n].Dz[2]*Dv+P[n].D2[2]*Dv2)*subtractLPT);
           fprintf(fp,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",
-                      lengthfac*P[n].Pos[0],lengthfac*P[n].Pos[1],lengthfac*P[n].Pos[2],velfac*P_vel[0],velfac*P_vel[1],velfac*P_vel[2]);
+                      (float)(lengthfac*P[n].Pos[0]),(float)(lengthfac*P[n].Pos[1]),(float)(lengthfac*P[n].Pos[2]),(float)(velfac*P_Vel[0]),(float)(velfac*P_Vel[1]),(float)(velfac*P_Vel[2]));
         }
 #endif
         fclose(fp);
@@ -682,9 +685,9 @@ void Output(double A, double Dv, double Dv2) {
     P[n].Pos[1] /= lengthfac;
     P[n].Pos[2] /= lengthfac;
 
-    P[n].Vel[0] = sqrt(A)*P[n].Vel[0]/fac+sumx-(P[n].Dz[0]*Dv+P[n].D2[0]*Dv2)*subtractLPT;
-    P[n].Vel[1] = sqrt(A)*P[n].Vel[1]/fac+sumy-(P[n].Dz[1]*Dv+P[n].D2[1]*Dv2)*subtractLPT;
-    P[n].Vel[2] = sqrt(A)*P[n].Vel[2]/fac+sumz-(P[n].Dz[2]*Dv+P[n].D2[2]*Dv2)*subtractLPT;
+    P[n].Vel[0] = P[n].Vel[0]/(velfac*fac)+sumx-(P[n].Dz[0]*Dv+P[n].D2[0]*Dv2)*subtractLPT;
+    P[n].Vel[1] = P[n].Vel[1]/(velfac*fac)+sumy-(P[n].Dz[1]*Dv+P[n].D2[1]*Dv2)*subtractLPT;
+    P[n].Vel[2] = P[n].Vel[2]/(velfac*fac)+sumz-(P[n].Dz[2]*Dv+P[n].D2[2]*Dv2)*subtractLPT;
   }
 #endif  
  

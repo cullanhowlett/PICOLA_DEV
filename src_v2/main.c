@@ -174,6 +174,7 @@ int main(int argc, char **argv) {
       for (k=0; k<Nsample; k++) {
         coord = (i * Nsample + j) * Nsample + k;
            
+        P[coord].ID = ((i + Local_p_start) * Nsample + j) * Nsample + k;
         for (m=0; m<3; m++) {
           P[coord].Dz[m] = ZA[m][coord];
           P[coord].D2[m] = LPT[m][coord];
@@ -205,10 +206,10 @@ int main(int argc, char **argv) {
 
   // The density grid and force grids  and associated fftw plans
 #ifndef MEMORY_MODE
-  density = (float_kind *)malloc(2*Total_size*sizeof(float_kind));
-  N11  = (float_kind *)malloc(2*Total_size*sizeof(float_kind));
-  N12  = (float_kind *)malloc(2*Total_size*sizeof(float_kind));
-  N13  = (float_kind *)malloc(2*Total_size*sizeof(float_kind));
+  density = (float_kind *)calloc(2*Total_size,sizeof(float_kind));
+  N11  = (float_kind *)calloc(2*Total_size,sizeof(float_kind));
+  N12  = (float_kind *)calloc(2*Total_size,sizeof(float_kind));
+  N13  = (float_kind *)calloc(2*Total_size,sizeof(float_kind));
   P3D  = (complex_kind*)density;
   FN11 = (complex_kind*)N11;
   FN12 = (complex_kind*)N12;
@@ -268,7 +269,7 @@ int main(int argc, char **argv) {
     MoveParticles();
 
 #ifdef MEMORY_MODE
-    density = (float_kind *)malloc(2*Total_size*sizeof(float_kind));
+    density = (float_kind *)calloc(2*Total_size,sizeof(float_kind));
     P3D  = (complex_kind*)density;
 #ifdef SINGLE_PRECISION
     plan = fftwf_mpi_plan_dft_r2c_3d(Nmesh,Nmesh,Nmesh,density,P3D,MPI_COMM_WORLD,FFTW_ESTIMATE);
@@ -282,9 +283,9 @@ int main(int argc, char **argv) {
     PtoMesh();
 
 #ifdef MEMORY_MODE
-    N11  = (float_kind *)malloc(2*Total_size*sizeof(float_kind));
-    N12  = (float_kind *)malloc(2*Total_size*sizeof(float_kind));
-    N13  = (float_kind *)malloc(2*Total_size*sizeof(float_kind));
+    N11  = (float_kind *)calloc(2*Total_size,sizeof(float_kind));
+    N12  = (float_kind *)calloc(2*Total_size,sizeof(float_kind));
+    N13  = (float_kind *)calloc(2*Total_size,sizeof(float_kind));
     FN11 = (complex_kind*)N11;
     FN12 = (complex_kind*)N12;
     FN13 = (complex_kind*)N13;

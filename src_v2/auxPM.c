@@ -92,7 +92,7 @@ void slice(void) {
   if (ThisTask == 0) {
     if (NTask < NumFilesWrittenInParallel) {
       printf("\nERROR: Number of processors must be a smaller or equal than `NumFilesWrittenInParallel'.\n\n");
-      FatalError(24131);
+      NumFilesWrittenInParallel = NTask;
     }
   }
 
@@ -112,11 +112,11 @@ void slice(void) {
         }
         for(i=0; i<NumPart; i++){
 #if (MEMORY_MODE || SINGLE_PRECISION)
-          fprintf(fp,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",
+          fprintf(fp,"%12u %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",
 #else 
-          fprintf(fp,"%12.6lf %12.6lf %12.6lf %12.6lf %12.6lf %12.6lf\n",
+          fprintf(fp,"%12u %12.6lf %12.6lf %12.6lf %12.6lf %12.6lf %12.6lf\n",
 #endif
-                      P[i].Pos[0],P[i].Pos[1],P[i].Pos[2],P[i].Vel[0],P[i].Vel[1],P[i].Vel[2]);
+                      P[i].ID, P[i].Pos[0],P[i].Pos[1],P[i].Pos[2],P[i].Vel[0],P[i].Vel[1],P[i].Vel[2]);
         }
         fclose(fp);
       }

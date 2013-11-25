@@ -58,7 +58,7 @@ void PtoMesh(void);
 void MtoParticles(void);
 void MoveParticles(void);
 void GetDisplacements(void);
-int FatalError(int errnum);
+void FatalError(char * filename, int linenum);
 #if (MEMORY_MODE || SINGLE_PRECISION)
 float periodic_wrap(float x);
 #else
@@ -75,6 +75,12 @@ int sort_redshift(const void * Item1, const void * Item2);
 // kernel.c
 #ifdef GENERIC_FNL
 void read_kernel_table(void);
+#endif
+
+// lightcone.c
+#ifdef LIGHTCONE
+void set_lightcone(void);
+void Drift_Lightcone(double A, double AFF, double AF, double Di, int timeStep);
 #endif
 
 // 2LPT.c

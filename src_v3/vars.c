@@ -134,15 +134,18 @@ unsigned long long TotNumPart;  // The total number of particles in the simulati
 double Box;                     // The edge length of the simulation
 double Buffer;                  // The amount of extra memory of each processor to compensate for moving particles
 #ifdef LIGHTCONE
-extern int Vec_x;              // The lightcone vector in the x, y, and z directions (To maintain accuracy we use integers as this is normalised in the code)
-extern int Vec_y;              // For example: (1,0,0) is along the x axis, (1,1,1) means we take one step in each direction (resulting in a vector at 45 degrees to all three axes),
-extern int Vec_z;              //              (25, -10, 0) means we are in the z plane and for every step in the negative-y direction we take 2.5 in the x direction etc.
-extern double Origin_x;        // The x-position of the lightcone origin
-extern double Origin_y;        // The y-position of the lightcone origin
-extern double Origin_z;        // The z-position of the lightcone origin
-extern double UnitVec[3];      // The normalised unit vector (without including the comoving distance) of the lightcone
-extern double LightconeAngle;  // The angle subtended by the Lightcone's solid angle area.
-extern double SolidAngleArea;  // The area covered by the lightcone (in PI-steradians, i.e., full-sky = 4.0)
+int * repflag;         // A flag to say whether we need to check inside a given replicate
+int Nrep_neg_x;        // The number of replicated boxes in the negative x direction
+int Nrep_neg_y;        // The number of replicated boxes in the negative y direction
+int Nrep_neg_z;        // The number of replicated boxes in the negative z direction
+int Nrep_pos_x;        // The number of replicated boxes in the positive x direction
+int Nrep_pos_y;        // The number of replicated boxes in the positive y direction
+int Nrep_pos_z;        // The number of replicated boxes in the positive z direction
+int Nrep_neg_max[3];   // The maximum number of replicated boxes in the negative directions
+int Nrep_pos_max[3];   // The maximum number of replicated boxes in the positive directions
+double Origin_x;       // The x-position of the lightcone origin
+double Origin_y;       // The y-position of the lightcone origin
+double Origin_z;       // The z-position of the lightcone origin
 #endif
 
 // 2LPT specific

@@ -172,7 +172,7 @@ void MoveParticles(void) {
                 if (send_count_left >= send_count_max) {
                   printf("\nERROR: Number of particles to be sent left on task %d is greater than send_count_max\n", ThisTask);
                   printf("       You must increase the size of the buffer region.\n\n");
-                  FatalError(40);
+                  FatalError("auxPM.c", 175);
                 }
               }
             } else {
@@ -187,7 +187,7 @@ void MoveParticles(void) {
                 if (send_count_right >= send_count_max) {
                   printf("\nERROR: Number of particles to be sent right on task %d is greater than send_count_max\n", ThisTask);
                   printf("       You must increase the size of the buffer region.\n\n");
-                  FatalError(41);
+                  FatalError("auxPM.c", 190);
                 }
               }
             }
@@ -235,7 +235,7 @@ void MoveParticles(void) {
     if (NumPart+recv_count_left+recv_count_right > Local_np*Nsample*Nsample*Buffer) {
       printf("\nERROR: Number of particles to be recieved on task %d is greater than available space\n", ThisTask);
       printf("       You must increase the size of the buffer region.\n\n");
-      FatalError(42);
+      FatalError("auxPM.c", 238);
     }
 
     // Copy across the new particles and store them at the end (of the memory). Then modify NumPart to include them.
@@ -333,10 +333,12 @@ void PtoMesh(void) {
 // ===========================================
 void Forces(void) {
 
-  int iglobal,jrev,kmin;
-  unsigned int i,j,k;
-  double RK,KK;
-  complex_kind di,dj,dk,dens;
+  int di, dj, dk;
+  int iglobal, jrev, kmin;
+  unsigned int i, j, k;
+  double RK, KK, grid_corr;
+  double sinc_x, sinc_y, sinc_z;
+  complex_kind dens;
 
   // We need global values for i as opposed to local values
   // Same goes for anything that relies on i (such as RK). 
@@ -354,43 +356,68 @@ void Forces(void) {
 
         unsigned int ind = (i*Nmesh+j)*(Nmesh/2+1)+k;
         if (iglobal > Nmesh/2) {
-          di[0] = iglobal-Nmesh;
+          di = iglobal-Nmesh;
           RK    = (double)(k*k+(Nmesh-iglobal)*(Nmesh-iglobal)+j*j);
         } else {
-          di[0] = iglobal;
+          di = iglobal;
           RK    = (double)(k*k+iglobal*iglobal+j*j) ;
         }
-        dj[0] = j;
-        dk[0] = k;
+        dj = j;
+        dk = k;
 
-        KK = 1.0;
-        if (filter == 1) KK = RK*Scale*Scale;          
+        // Deconvolve the CIC window function twice (once for density, once for force interpolation)
+        // and add gaussian smoothing if requested
 
-        dens[0] = -1.0/RK/(pow((double)Nmesh,3)) * P3D[ind][0];
-        dens[1] = -1.0/RK/(pow((double)Nmesh,3)) * P3D[ind][1];
+        KK = -1.0/RK;
 
-        FN11[ind][0] = -1.0*dens[1]*di[0]/Scale*KK;
-        FN11[ind][1] =      dens[0]*di[0]/Scale*KK;
-        FN12[ind][0] = -1.0*dens[1]*dj[0]/Scale*KK;
-        FN12[ind][1] =      dens[0]*dj[0]/Scale*KK;
-        FN13[ind][0] = -1.0*dens[1]*dk[0]/Scale*KK;
-        FN13[ind][1] =      dens[0]*dk[0]/Scale*KK;
-                
+        sinc_x = sinc_y = sinc_z = 1.0;
+        if (di != 0) sinc_x = sin((PI*di)/(double)Nmesh)/((PI*di)/(double)Nmesh);
+        if (dj != 0) sinc_y = sin((PI*dj)/(double)Nmesh)/((PI*dj)/(double)Nmesh);
+        if (dk != 0) sinc_z = sin((PI*dk)/(double)Nmesh)/((PI*dk)/(double)Nmesh);
+        grid_corr = 1.0/(sinc_x*sinc_y*sinc_z);
+        grid_corr = pow(grid_corr, 4.0);
+        grid_corr = 1.0;
+
+        dens[0] = (     P3D[ind][0]*KK*grid_corr)/pow((double)Nmesh,3);
+        dens[1] = (-1.0*P3D[ind][1]*KK*grid_corr)/pow((double)Nmesh,3);
+
+        // dens now holds the potential so we can solve for the force. 
+
+        FN11[ind][0] = dens[1]*di/Scale;
+        FN11[ind][1] = dens[0]*di/Scale;
+        FN12[ind][0] = dens[1]*dj/Scale;
+        FN12[ind][1] = dens[0]*dj/Scale;
+        FN13[ind][0] = dens[1]*dk/Scale;
+        FN13[ind][1] = dens[0]*dk/Scale;
+            
+        // Do the mirror force along the y axis
         if ((j != (unsigned int)(Nmesh/2)) && (j != 0)) {
           jrev=Nmesh-j;
 
           int ind = (i*Nmesh+jrev)*(Nmesh/2+1)+k;
 
-          dj[0]=-1.0*j;
-          dens[0] = -1.0/RK/(pow((double)Nmesh,3)) * P3D[ind][0];
-          dens[1] = -1.0/RK/(pow((double)Nmesh,3)) * P3D[ind][1];
+          dj = -j;
+
+          // Deconvolve the CIC window function twice (once for density, once for force interpolation)
+          // and add gaussian smoothing if requested
+
+          sinc_y = 1.0;
+          if (dj != 0) sinc_y = sin((PI*dj)/(double)Nmesh)/((PI*dj)/(double)Nmesh);
+          grid_corr = 1.0/(sinc_x*sinc_y*sinc_z);
+          grid_corr = pow(grid_corr, 4.0);
+          grid_corr = 1.0;
+
+          dens[0] = (     P3D[ind][0]*KK*grid_corr)/pow((double)Nmesh,3);
+          dens[1] = (-1.0*P3D[ind][1]*KK*grid_corr)/pow((double)Nmesh,3);
+
+          // dens now holds the potential so we can solve for the force. 
           
-          FN11[ind][0] = -1.0*dens[1]*di[0]/Scale*KK;
-          FN11[ind][1] =      dens[0]*di[0]/Scale*KK;
-          FN12[ind][0] = -1.0*dens[1]*dj[0]/Scale*KK;
-          FN12[ind][1] =      dens[0]*dj[0]/Scale*KK;
-          FN13[ind][0] = -1.0*dens[1]*dk[0]/Scale*KK;
-          FN13[ind][1] =      dens[0]*dk[0]/Scale*KK;        
+          FN11[ind][0] = dens[1]*di/Scale;
+          FN11[ind][1] = dens[0]*di/Scale;
+          FN12[ind][0] = dens[1]*dj/Scale;
+          FN12[ind][1] = dens[0]*dj/Scale;
+          FN13[ind][0] = dens[1]*dk/Scale;
+          FN13[ind][1] = dens[0]*dk/Scale;       
         }
       }
     }
@@ -532,11 +559,12 @@ double periodic_wrap(double x)
 
 // Error message
 // =============
-int FatalError(int errnum) {
+void FatalError(char * filename, int linenum) {
+  printf("Fatal Error at line %d in file %s\n", linenum, filename);
   fflush(stdout);
   free(OutputList);
-  MPI_Abort(MPI_COMM_WORLD, errnum);
-  exit(0);
+  MPI_Abort(MPI_COMM_WORLD, 1);
+  exit(1);
 }
 
 // This catches I/O errors occuring for fwrite(). In this case we better stop.
@@ -546,7 +574,7 @@ size_t my_fwrite(void *ptr, size_t size, size_t nmemb, FILE * stream) {
   if((nwritten = fwrite(ptr, size, nmemb, stream)) != nmemb) {
     printf("\nERROR: I/O error (fwrite) on task=%d has occured.\n\n", ThisTask);
     fflush(stdout);
-    FatalError(43);
+    FatalError("auxPM.c", 577);
   }
   return nwritten;
 }
