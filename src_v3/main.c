@@ -183,6 +183,7 @@ int main(int argc, char **argv) {
       for (k=0; k<Nsample; k++) {
         coord = (i * Nsample + j) * Nsample + k;
            
+        P[coord].ID = ((unsigned long long)((i + Local_p_start) * Nsample + j)) * (unsigned long long)Nsample + (unsigned long long)k;
         for (m=0; m<3; m++) {
           P[coord].Dz[m] = ZA[m][coord];
           P[coord].D2[m] = LPT[m][coord];
@@ -669,8 +670,8 @@ void Output(double A, double Dv, double Dv2) {
           P_Vel[0] = fac*(P[n].Vel[0]-sumx+(P[n].Dz[0]*Dv+P[n].D2[0]*Dv2)*subtractLPT);
           P_Vel[1] = fac*(P[n].Vel[1]-sumy+(P[n].Dz[1]*Dv+P[n].D2[1]*Dv2)*subtractLPT);
           P_Vel[2] = fac*(P[n].Vel[2]-sumz+(P[n].Dz[2]*Dv+P[n].D2[2]*Dv2)*subtractLPT);
-          fprintf(fp,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",
-                      (float)(lengthfac*P[n].Pos[0]),(float)(lengthfac*P[n].Pos[1]),(float)(lengthfac*P[n].Pos[2]),(float)(velfac*P_Vel[0]),(float)(velfac*P_Vel[1]),(float)(velfac*P_Vel[2]));
+          fprintf(fp,"%12llu %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",
+                      P[n].ID, (float)(lengthfac*P[n].Pos[0]),(float)(lengthfac*P[n].Pos[1]),(float)(lengthfac*P[n].Pos[2]),(float)(velfac*P_Vel[0]),(float)(velfac*P_Vel[1]),(float)(velfac*P_Vel[2]));
         }
 #endif
         fclose(fp);

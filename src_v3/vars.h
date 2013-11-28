@@ -168,7 +168,7 @@ extern struct part_data {
 #ifdef LIGHTCONE
   int Flag;                // A flag to say whether or not a given particle has left the lightcone
 #endif
-  //unsigned long long ID;   // The Particle ID
+  unsigned long long ID;   // The Particle ID
   float Dz[3];             // The Zeldovich displacment of the particle in the X, Y and Z directions
   float D2[3];             // The 2LPT displacment of the particle in the X, Y and Z directions
   float Pos[3];            // The position of the particle in the X, Y and Z directions
@@ -182,7 +182,7 @@ extern struct part_data {
 #ifdef LIGHTCONE
   int Flag;                   // A flag to say whether or not a given particle has left the lightcone
 #endif
-  //unsigned long long ID;      // The particle ID
+  unsigned long long ID;      // The particle ID
   float_kind Dz[3];           // The Zeldovich displacment of the particle in the X, Y and Z directions
   float_kind D2[3];           // The 2LPT displacment of the particle in the X, Y and Z directions
   float_kind Pos[3];          // The position of the particle in the X, Y and Z directions

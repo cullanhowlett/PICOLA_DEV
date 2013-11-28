@@ -45,8 +45,8 @@ OPTIONS += $(GAUSSIAN)
                                         # For local, equilateral and orthogonal models you can use the provided files
                                         # input_kernel_local.txt, input_kernel_equil.txt, input_kernel_orthog.txt 
 
-#GADGET_STYLE = -DGADGET_STYLE          # Writes all the output in Gadget's '1' style format, with the corresponding
-#OPTIONS += $(GADGET_STYLE)             # header and correct velocity units
+GADGET_STYLE = -DGADGET_STYLE          # Writes all the output in Gadget's '1' style format, with the corresponding
+OPTIONS += $(GADGET_STYLE)             # header and correct velocity units
 
 
 # Nothing below here should need changing unless you are adding in/modifying libraries for existing or new machines
@@ -143,7 +143,7 @@ endif
 
 LIBS   =   -lm $(MPI_LIBs) $(FFTW_LIBS) $(GSL_LIBS)
 
-CFLAGS =   $(OPTIMIZE) $(FFTW_INCL) $(GSL_INCL) $(OPTIONS)
+CFLAGS =   $(OPTIMIZE) $(FFTW_INCL) $(GSL_INCL) $(MPI_INCL) $(OPTIONS)
 
 OBJS   = src_v3/main.o src_v3/cosmo.o src_v3/auxPM.o src_v3/2LPT.o src_v3/power.o src_v3/vars.o src_v3/read_param.o
 ifdef GENERIC_FNL

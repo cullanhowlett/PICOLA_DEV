@@ -31,6 +31,191 @@ void set_lightcone(void) {
   return;
 }
 
+// Flag replicates that don't need to be looped over this iteration, as they are either completely inside or outside the lightcone
+// ===============================================================================================================================
+void flag_replicates(double Rcomov_old, double Rcomov_new, double boundary) {
+
+  int i, j, k, ii, jj, kk; 
+  int repcount_low, coord;
+  double Xvert, Yvert, Zvert, Rvert;
+  double dist_face_old, dist_face_new;
+  double Rcomov_old2 = Rcomov_old*Rcomov_old;
+  double Rcomov_new2 = Rcomov_new*Rcomov_new;
+
+  // Check the maximum number of replicates in each direction and update if necessary
+  if ((int)(ceil(fabs((Origin_x - Rcomov_old)/Box))) < Nrep_neg_x) Nrep_neg_x = (int)(ceil(fabs((Origin_x - Rcomov_old)/Box)));
+  if ((int)(ceil(fabs((Origin_y - Rcomov_old)/Box))) < Nrep_neg_y) Nrep_neg_y = (int)(ceil(fabs((Origin_y - Rcomov_old)/Box)));
+  if ((int)(ceil(fabs((Origin_z - Rcomov_old)/Box))) < Nrep_neg_z) Nrep_neg_z = (int)(ceil(fabs((Origin_z - Rcomov_old)/Box)));
+  if ((int)(ceil((Rcomov_old + Origin_x)/Box))-1 < Nrep_pos_x) Nrep_pos_x = (int)(ceil((Rcomov_old + Origin_x)/Box))-1;
+  if ((int)(ceil((Rcomov_old + Origin_y)/Box))-1 < Nrep_pos_y) Nrep_pos_y = (int)(ceil((Rcomov_old + Origin_y)/Box))-1;
+  if ((int)(ceil((Rcomov_old + Origin_z)/Box))-1 < Nrep_pos_z) Nrep_pos_z = (int)(ceil((Rcomov_old + Origin_z)/Box))-1;
+
+  if (ThisTask == 0) printf("%lf, %lf, %d, %d, %d, %d, %d, %d\n", Rcomov_old, Rcomov_new, Nrep_neg_x, Nrep_pos_x, Nrep_neg_y, Nrep_pos_y, Nrep_neg_z, Nrep_pos_z);
+
+  // Loop over all replicates and if any replicate is completely within the lightcone (i.e. all eight vertices are within Rcomov_new)
+  // then flag it so that we don't have to loop over it. NOTE: this method will not work to see if replicates are completely outside the
+  // lightcone, as there can easily be a case where the lightcone is inside all eight vertices of a replicated box, yet the lightcone still 
+  // passes through it. In this case the routine is much more complicated and involves looping over all 6 faces of the replicate, and computing
+  // the shortest distance to the finite plane of the face.
+  for (i = -Nrep_neg_x; i<=Nrep_pos_x; i++) {
+    for (j = -Nrep_neg_y; j<=Nrep_pos_y; j++) {
+      for (k = -Nrep_neg_z; k<=Nrep_pos_z; k++) {
+
+        coord = ((i+Nrep_neg_max[0])*(Nrep_neg_max[1]+Nrep_pos_max[1]+1)+(j+Nrep_neg_max[1]))*(Nrep_neg_max[2]+Nrep_pos_max[2]+1)+(k+Nrep_neg_max[2]);
+
+        // Skip this replicate if we already know it is completely outside the lightcone
+        // the particle positions first
+        if (repflag[coord] == 2) continue;
+ 
+        // Loop over all the vertices
+        repflag[coord] = 0;
+        repcount_low = 0;
+        for (ii = 0; ii < 2; ii++) {
+          for (jj = 0; jj < 2; jj++) {
+            for (kk = 0; kk < 2; kk++) {
+
+              Xvert = (i+((ThisTask+ii)/(double)NTask))*Box - Origin_x;
+              Yvert = (j+jj)*Box - Origin_y;
+              Zvert = (k+kk)*Box - Origin_z;
+              Rvert = Xvert*Xvert+Yvert*Yvert+Zvert*Zvert;
+                  
+              // Include a buffer region to account for the fact that the particle might move beyond the box boundaries, 20Mpc should be enough.
+              if (Rvert < Rcomov_new2-boundary) repcount_low++;
+            }
+          }
+        }
+            
+        // If box is completely inside the lightcone, we flag it and continue into the next repklicate
+        if (repcount_low == 8) {
+          repflag[coord] = 1;
+          continue;
+        }
+
+        // Otherwise we check to see if the replicate is completely outside the lightcone. This is where it gets more complicated. 
+        // For all the necessary faces of the replicate, we calculate the shortest possible distance from the origin to the face.
+        // This is given by the sum of the squares of the distance to the projected origin and the 
+        // distance from the projected origin to the nearest line segment, which itself is the sum of the squares 
+        // of the distance from the projection of the origin onto the plane to the projection of this onto the 
+        // nearest line segment and the distance along the line segment.
+        if (repcount_low == 0) {
+
+          dist_face_old = 1.0e30;
+          dist_face_new = 1.0e30;
+
+          // Check the two faces perpendicular to the x-axis (don't forget these are different depending on the task).
+          if (Origin_x < (i+(ThisTask/(double)NTask))*Box) {
+            dist_face_old = Origin_x - (i+(ThisTask/(double)NTask))*Box;
+            dist_face_old *= dist_face_old;
+            dist_face_old += nearest_dist(Origin_y, Origin_z, j, k, j+1, k+1);
+          } else if (Origin_x > (i+((ThisTask+1)/(double)NTask))*Box) {
+            dist_face_old = Origin_x - (i+((ThisTask+1)/(double)NTask))*Box;
+            dist_face_old *= dist_face_old;
+            dist_face_old += nearest_dist(Origin_y, Origin_z, j, k, j+1, k+1);
+          }
+
+          // Check the two faces perpendicular to the y-axis.
+          if (Origin_y < j*Box) {
+            dist_face_new = Origin_y - j*Box;
+            dist_face_new *= dist_face_old;
+            dist_face_new += nearest_dist(Origin_x, Origin_z, i+(ThisTask/(double)NTask), k, i+((ThisTask+1)/(double)NTask), k+1);
+          } else if (Origin_y > (j+1)*Box) {
+            dist_face_new = Origin_y - (j+1)*Box;
+            dist_face_new *= dist_face_old;
+            dist_face_new += nearest_dist(Origin_x, Origin_z, i+(ThisTask/(double)NTask), k, i+((ThisTask+1)/(double)NTask), k+1);
+          }
+          if (dist_face_old > dist_face_new) dist_face_old = dist_face_new;
+
+          // Check the two faces perpendicular to the z-axis.
+          if (Origin_z < k*Box) {
+            dist_face_new = Origin_z - k*Box;
+            dist_face_new *= dist_face_old;
+            dist_face_new += nearest_dist(Origin_x, Origin_y, i+(ThisTask/(double)NTask), j, i+((ThisTask+1)/(double)NTask), j+1);
+          } else if (Origin_z > (k+1)*Box) {
+            dist_face_new = Origin_z - (k+1)*Box;
+            dist_face_new *= dist_face_old;
+            dist_face_new += nearest_dist(Origin_x, Origin_y, i+(ThisTask/(double)NTask), j, i+((ThisTask+1)/(double)NTask), j+1);
+          }
+          if (dist_face_old > dist_face_new) dist_face_old = dist_face_new;
+          
+          // If dist_face_old is greater than 9.9e29 then the origin is WITHIN the current replicate so we definitely have to loop over it.
+          // Otherwise dist_face_old now contains the shortest distance from ANY point on the replicate to the lightcone. Hence if this is greater than Rcomov_old2
+          // we never have to loop over this replicate again
+          if (dist_face_old < 9.9e29) {
+            if (dist_face_old > Rcomov_old2+boundary) repflag[coord] = 2;
+          }        
+        }
+      }
+    }
+  }
+
+return;
+}
+
+
+// For a given face on a replicate this routine returns the shortest distance between the face, bounded by (ix, iy) and (jx, jy), and the point (px, py)
+double nearest_dist(double px, double py, double ix, double iy, double jx, double jy) {
+
+  double dist1, dist2;
+  double dist_line_old, dist_line_new;
+
+  dist_line_old = 0.0;
+  dist_line_new = 0.0;
+
+  // Check the 4 line segments of the face of the replicate that is contained on the plane. For each necessary line segment we compute 
+  // the distance, 'dist1', of the projection of the projected origin on the plane onto an infinite line containing the line segment (2D -> 1D).
+  // The distance along the line between the 1D projection and the end of the line segment is then dist2. NOTE: for projections that land
+  // inside the face, .i.e. within all four line segments, we don't care about dist1 or dist2 as the shortest distance between the point and the
+  // replicate is just dist1. Also, we only have to do a maximum of 2 line segments then as this is the most that any point can see.
+  if (px < ix*Box ) {
+    dist2 = 0.0;
+    dist1 = px - ix*Box;
+    if (py < iy*Box) {
+      dist2 = py - iy*Box; 
+    } else if (py > jy*Box) {
+      dist2 = py - jy*Box;
+    }          
+    dist_line_old = dist1*dist1+dist2*dist2;
+  } else if (px > jx*Box) {
+    dist2 = 0.0;
+    dist1 = px - jx*Box;
+    if (py < iy*Box) {
+      dist2 = py - iy*Box; 
+    } else if (py > jy*Box) {
+      dist2 = py - jy*Box;
+    }          
+    dist_line_old = dist1*dist1+dist2*dist2;
+  }
+ 
+  // The third and fourth line segments
+  if (py < iy*Box) {
+    dist2 = 0.0;
+    dist1 = py - iy*Box;
+    if (px < ix*Box) {
+      dist2 = px - ix*Box; 
+    } else if (px > jx*Box) {
+      dist2 = px - jx*Box;
+    }        
+    dist_line_new = dist1*dist1+dist2*dist2;
+  } else if (py > jy*Box) {
+    dist2 = 0.0;
+    dist1 = py - jy*Box;
+    if (px < ix*Box) {
+      dist2 = px - ix*Box; 
+    } else if (px > jx*Box) {
+      dist2 = px - jx*Box;
+    }        
+    dist_line_new = dist1*dist1+dist2*dist2;
+  }
+
+  // Find the shortest distance to any of the line segments
+  if (dist_line_old > dist_line_new) dist_line_old = dist_line_new;
+  
+  return dist_line_old;
+
+}
+
+
+
 // Drift and output the particles for lightcone simulations
 // ========================================================
 void Drift_Lightcone(double A, double AFF, double AF, double Di, int timeStep) {
@@ -47,14 +232,13 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, int timeStep) {
 
   FILE * fp; 
   char buf[300];
-  int i, j, k, ii, jj, kk;
+  int i, j, k, coord;
   int flag, nprocgroup, groupTask, masterTask;
-  int repcount_low, repcount_high, coord;
   unsigned int n;
   double dyyy, da1, da2, dv1, dv2;
   double dyyy_tmp, da1_tmp, da2_tmp;
   double Delta_Pos[3], P_Pos[3], P_Vel[3];
-  double boundary = 10.0;
+  double boundary = 20.0;
   double fac = Hubble/pow(AF,1.5);
   double lengthfac = UnitLength_in_cm/3.085678e24;     // Convert positions to Mpc/h
   double velfac    = UnitVelocity_in_cm_per_s/1.0e5;   // Convert velocities to km/s
@@ -80,61 +264,13 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, int timeStep) {
   dv1 = DprimeQ(AF);    // dD_{za}/dy
   dv2 = growthD2v(AF);  // dD_{2lpt}/dy
 
-  // Check the maximum number of replicates in each direction and update if necessary
-  if ((int)(ceil(fabs((Origin_x - Rcomov_old)/Box))) < Nrep_neg_x) Nrep_neg_x = (int)(ceil(fabs((Origin_x - Rcomov_old)/Box)));
-  if ((int)(ceil(fabs((Origin_y - Rcomov_old)/Box))) < Nrep_neg_y) Nrep_neg_y = (int)(ceil(fabs((Origin_y - Rcomov_old)/Box)));
-  if ((int)(ceil(fabs((Origin_z - Rcomov_old)/Box))) < Nrep_neg_z) Nrep_neg_z = (int)(ceil(fabs((Origin_z - Rcomov_old)/Box)));
-  if ((int)(ceil((Rcomov_old + Origin_x)/Box))-1 < Nrep_pos_x) Nrep_pos_x = (int)(ceil((Rcomov_old + Origin_x)/Box))-1;
-  if ((int)(ceil((Rcomov_old + Origin_y)/Box))-1 < Nrep_pos_y) Nrep_pos_y = (int)(ceil((Rcomov_old + Origin_y)/Box))-1;
-  if ((int)(ceil((Rcomov_old + Origin_z)/Box))-1 < Nrep_pos_z) Nrep_pos_z = (int)(ceil((Rcomov_old + Origin_z)/Box))-1;
+  // Flag the replicates that don't need looping over
+  flag_replicates(Rcomov_old, Rcomov_new, boundary); 
 
-  if (ThisTask == 0) printf("%lf, %lf, %d, %d, %d, %d, %d, %d\n", Rcomov_old, Rcomov_new, Nrep_neg_x, Nrep_pos_x, Nrep_neg_y, Nrep_pos_y, Nrep_neg_z, Nrep_pos_z);
-
-  // Loop over all replicates and if any replicate is completely within/outside the lightcone (i.e. all eight vertices are within Rcomov_new/outside Rcomov_old)
-  // then flag it so that we don't have to loop over it. NOTE: this method will not work to see if replicates are completely outside the
-  // lightcone if we also introduce an angular restriction on the lightcone, as I then can easily think of a way to place a lightcone so that 
-  // all eight vertices of a replicated box are outside the lightcone, yet the lightcone still passes through it. In this case the only way 
-  // I can think of to check if a box is completely outside the lightcone is to loop over all the particles once and flag it if no particles 
-  // are within Rcomov_old.
   for (i = -Nrep_neg_x; i<=Nrep_pos_x; i++) {
     for (j = -Nrep_neg_y; j<=Nrep_pos_y; j++) {
       for (k = -Nrep_neg_z; k<=Nrep_pos_z; k++) {
-
-        coord = ((i+Nrep_neg_max[0])*(Nrep_neg_max[1]+Nrep_pos_max[1]+1)+(j+Nrep_neg_max[1]))*(Nrep_neg_max[2]+Nrep_pos_max[2]+1)+(k+Nrep_neg_max[2]);
-
-        // Skip this replicate if we already know it is completely outside the lightcone
-        // the particle positions first
-        if (repflag[coord] == 2) continue;
- 
-        // Loop over all the vertices
-        repflag[coord] = 0;
-        repcount_low = repcount_high = 0;
-        for (ii = 0; ii < 2; ii++) {
-          for (jj = 0; jj < 2; jj++) {
-            for (kk = 0; kk < 2; kk++) {
-
-              Xpart = i*Box - Origin_x + (ThisTask+ii)*(Box/(double)NTask);
-              Ypart = (j+jj)*Box - Origin_y;
-              Zpart = (k+kk)*Box - Origin_z;
-              Rpart_old = Xpart*Xpart+Ypart*Ypart+Zpart*Zpart;
-                  
-              // Include a buffer region to account for the fact that the particle might move beyond the box boundaries, 500kpc should be enough.
-              if (Rpart_old <= Rcomov_new2-boundary) {
-                repcount_low++;
-              } else if (Rpart_old >= Rcomov_old2+boundary) {
-                repcount_high++;
-              }
-            }
-          }
-        }
-            
-        // If box is completely inside or outside the lightcone, we skip it UNLESS it is the last replicate, in which case update
-        // the particle positions first
-        if (repcount_low == 8) {
-          repflag[coord] = 1;
-        } else if (repcount_high == 8) {
-          repflag[coord] = 2;
-        }
+        printf("%d, %d, %d, %d, %d\n", ThisTask, i, j, k, repflag[((i+Nrep_neg_max[0])*(Nrep_neg_max[1]+Nrep_pos_max[1]+1)+(j+Nrep_neg_max[1]))*(Nrep_neg_max[2]+Nrep_pos_max[2]+1)+(k+Nrep_neg_max[2])]);
       }
     }
   }
@@ -169,7 +305,7 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, int timeStep) {
           Delta_Pos[1] = (P[n].Vel[1]-sumy)*dyyy+subtractLPT*(P[n].Dz[1]*da1+P[n].D2[1]*da2);   
           Delta_Pos[2] = (P[n].Vel[2]-sumz)*dyyy+subtractLPT*(P[n].Dz[2]*da1+P[n].D2[2]*da2);     
 
-          // Check that 500kpc boundaries is enough
+          // Check that 20Mpc/h boundaries is enough
           if (Delta_Pos[0]*Delta_Pos[0]+Delta_Pos[1]*Delta_Pos[1]+Delta_Pos[2]*Delta_Pos[2] > boundary) {
             printf("\nERROR: Particle displacement greater than boundary for lightcone replicate estimate.\n");
             printf("       increase boundary condition in lightcone.c (line 56)\n\n");

@@ -80,7 +80,9 @@ void read_kernel_table(void);
 // lightcone.c
 #ifdef LIGHTCONE
 void set_lightcone(void);
+void flag_replicates(double Rcomov_old2, double Rcomov_new2, double boundary);
 void Drift_Lightcone(double A, double AFF, double AF, double Di, int timeStep);
+double nearest_dist(double px, double py, double ix, double iy, double jx, double jy);
 #endif
 
 // 2LPT.c
