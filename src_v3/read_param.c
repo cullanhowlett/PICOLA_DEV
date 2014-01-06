@@ -126,9 +126,69 @@ void read_parameterfile(char * fname) {
 
   nt = 0;
 
+  strcpy(tag[nt], "OutputDir");
+  addr[nt] = OutputDir;
+  id[nt++] = STRING;
+
+  strcpy(tag[nt], "FileBase");
+  addr[nt] = FileBase;
+  id[nt++] = STRING;
+
+  strcpy(tag[nt], "OutputRedshiftFile");
+  addr[nt] = &OutputRedshiftFile;
+  id[nt++] = STRING;
+
+  strcpy(tag[nt], "NumFilesWrittenInParallel");
+  addr[nt] = &NumFilesWrittenInParallel;
+  id[nt++] = INT;
+
   strcpy(tag[nt], "UseCOLA");
   addr[nt] = &UseCOLA;
   id[nt++] = INT;
+
+  strcpy(tag[nt], "Buffer");
+  addr[nt] = &Buffer;
+  id[nt++] = FLOAT;
+
+  strcpy(tag[nt], "Nmesh");
+  addr[nt] = &Nmesh;
+  id[nt++] = INT;
+
+  strcpy(tag[nt], "Nsample");
+  addr[nt] = &Nsample;
+  id[nt++] = INT;
+
+  strcpy(tag[nt], "Box");
+  addr[nt] = &Box;
+  id[nt++] = FLOAT;
+
+  strcpy(tag[nt], "Init_Redshift");
+  addr[nt] = &Init_Redshift;
+  id[nt++] = FLOAT;
+
+  strcpy(tag[nt], "Seed");
+  addr[nt] = &Seed;
+  id[nt++] = INT;
+
+  strcpy(tag[nt], "SphereMode");
+  addr[nt] = &SphereMode;
+  id[nt++] = INT;
+
+  strcpy(tag[nt], "WhichSpectrum");
+  addr[nt] = &WhichSpectrum;
+  id[nt++] = INT;
+
+  strcpy(tag[nt], "WhichTransfer");
+  addr[nt] = &WhichTransfer;
+  id[nt++] = INT;
+
+  strcpy(tag[nt], "FileWithInputSpectrum");
+  addr[nt] = FileWithInputSpectrum;
+  id[nt++] = STRING;
+
+  strcpy(tag[nt], "FileWithInputTransfer");
+  addr[nt] = FileWithInputTransfer;
+  id[nt++] = STRING;
 
   strcpy(tag[nt], "Omega");
   addr[nt] = &Omega;
@@ -142,10 +202,6 @@ void read_parameterfile(char * fname) {
   addr[nt] = &HubbleParam;
   id[nt++] = FLOAT;
 
-  strcpy(tag[nt], "ShapeGamma");
-  addr[nt] = &ShapeGamma;
-  id[nt++] = FLOAT;
-
   strcpy(tag[nt], "Sigma8");
   addr[nt] = &Sigma8;
   id[nt++] = FLOAT;
@@ -154,9 +210,37 @@ void read_parameterfile(char * fname) {
   addr[nt] = &PrimordialIndex;
   id[nt++] = FLOAT;
 
-  strcpy(tag[nt], "Box");
-  addr[nt] = &Box;
+  strcpy(tag[nt], "UnitVelocity_in_cm_per_s");
+  addr[nt] = &UnitVelocity_in_cm_per_s;
   id[nt++] = FLOAT;
+
+  strcpy(tag[nt], "UnitLength_in_cm");
+  addr[nt] = &UnitLength_in_cm;
+  id[nt++] = FLOAT;
+
+  strcpy(tag[nt], "UnitMass_in_g");
+  addr[nt] = &UnitMass_in_g;
+  id[nt++] = FLOAT;
+
+  strcpy(tag[nt], "InputSpectrum_UnitLength_in_cm");
+  addr[nt] = &InputSpectrum_UnitLength_in_cm;
+  id[nt++] = FLOAT;
+
+#ifndef GAUSSIAN
+  strcpy(tag[nt], "Fnl_Redshift");
+  addr[nt] = &Fnl_Redshift;
+  id[nt++] = FLOAT;
+
+  strcpy(tag[nt], "Fnl");
+  addr[nt] = &Fnl;
+  id[nt++] = FLOAT;
+#endif
+
+#ifdef GENERIC_FNL
+  strcpy(tag[nt], "FileWithInputKernel");
+  addr[nt] = FileWithInputKernel;
+  id[nt++] = STRING;
+#endif
 
 #ifdef LIGHTCONE
   strcpy(tag[nt], "Origin_x");
@@ -196,94 +280,6 @@ void read_parameterfile(char * fname) {
   id[nt++] = INT;
 #endif
 
-  strcpy(tag[nt], "Buffer");
-  addr[nt] = &Buffer;
-  id[nt++] = FLOAT;
-
-  strcpy(tag[nt], "Init_Redshift");
-  addr[nt] = &Init_Redshift;
-  id[nt++] = FLOAT;
-
-#ifndef GAUSSIAN
-  strcpy(tag[nt], "Fnl_Redshift");
-  addr[nt] = &Fnl_Redshift;
-  id[nt++] = FLOAT;
-
-  strcpy(tag[nt], "Fnl");
-  addr[nt] = &Fnl;
-  id[nt++] = FLOAT;
-#endif
-
-  strcpy(tag[nt], "OutputRedshiftFile");
-  addr[nt] = &OutputRedshiftFile;
-  id[nt++] = STRING;
-
-  strcpy(tag[nt], "Nmesh");
-  addr[nt] = &Nmesh;
-  id[nt++] = INT;
-
-  strcpy(tag[nt], "Nsample");
-  addr[nt] = &Nsample;
-  id[nt++] = INT;
-
-  strcpy(tag[nt], "FileWithInputSpectrum");
-  addr[nt] = FileWithInputSpectrum;
-  id[nt++] = STRING;
-
-  strcpy(tag[nt], "FileWithInputTransfer");
-  addr[nt] = FileWithInputTransfer;
-  id[nt++] = STRING;
-
-#ifdef GENERIC_FNL
-  strcpy(tag[nt], "FileWithInputKernel");
-  addr[nt] = FileWithInputKernel;
-  id[nt++] = STRING;
-#endif
-
-  strcpy(tag[nt], "Seed");
-  addr[nt] = &Seed;
-  id[nt++] = INT;
-
-  strcpy(tag[nt], "SphereMode");
-  addr[nt] = &SphereMode;
-  id[nt++] = INT;
-
-  strcpy(tag[nt], "NumFilesWrittenInParallel");
-  addr[nt] = &NumFilesWrittenInParallel;
-  id[nt++] = INT;
-
-  strcpy(tag[nt], "OutputDir");
-  addr[nt] = OutputDir;
-  id[nt++] = STRING;
-
-  strcpy(tag[nt], "FileBase");
-  addr[nt] = FileBase;
-  id[nt++] = STRING;
-
-  strcpy(tag[nt], "WhichSpectrum");
-  addr[nt] = &WhichSpectrum;
-  id[nt++] = INT;
-
-  strcpy(tag[nt], "WhichTransfer");
-  addr[nt] = &WhichTransfer;
-  id[nt++] = INT;
-
-  strcpy(tag[nt], "UnitVelocity_in_cm_per_s");
-  addr[nt] = &UnitVelocity_in_cm_per_s;
-  id[nt++] = FLOAT;
-
-  strcpy(tag[nt], "UnitLength_in_cm");
-  addr[nt] = &UnitLength_in_cm;
-  id[nt++] = FLOAT;
-
-  strcpy(tag[nt], "UnitMass_in_g");
-  addr[nt] = &UnitMass_in_g;
-  id[nt++] = FLOAT;
-
-  strcpy(tag[nt], "InputSpectrum_UnitLength_in_cm");
-  addr[nt] = &InputSpectrum_UnitLength_in_cm;
-  id[nt++] = FLOAT;
-
   if((fd = fopen(fname, "r"))) {
     while(!feof(fd)) {
       buf[0] = 0;
@@ -313,61 +309,69 @@ void read_parameterfile(char * fname) {
 	    break;
 	}
       } else {
-        if(ThisTask == 0) fprintf(stdout,"\nERROR: In file %s:  Tag '%s' not allowed or multiple defined.\n",fname,buf1);
+        if(ThisTask == 0) fprintf(stdout,"\nERROR: In file %s:  Tag '%s' not allowed or multiple defined.\n\n",fname,buf1);
 	errorFlag = 1;
       }
     }
     fclose(fd);
     for(i = 0; i < nt; i++) {
       if(*tag[i]) {
-        if(ThisTask == 0) fprintf(stdout, "\nERROR: I miss a value for tag '%s' in parameter file '%s'.\n", tag[i], fname);
+        if(ThisTask == 0) fprintf(stdout, "\nERROR: I miss a value for tag '%s' in parameter file '%s'.\n\n", tag[i], fname);
         errorFlag = 1;
       }
     }
   } else {
-    if(ThisTask == 0) fprintf(stdout,"\nERROR: Parameter file '%s' not found.\n",fname);
-    errorFlag = 1;
+    if(ThisTask == 0) fprintf(stdout,"\nERROR: Parameter file '%s' not found.\n\n",fname);
+    FatalError("read_param.c", 325);
   }
 
   if (NTask < NumFilesWrittenInParallel) {
     printf("\nWARNING: Number of processors smaller than `NumFilesWrittenInParallel'.\n");
-    printf("         Setting NumFileWrittenInParallel = Number of processors'.\n");
+    printf("         Setting NumFileWrittenInParallel = Number of processors'.\n\n");
   }
 
   // Check the run parameters to ensure compatible gaussian/non-gaussian options
   if((WhichSpectrum != 0) && (WhichTransfer !=0)) {
     if (ThisTask == 0) {
-      printf("\nERROR: You are running with both power spectrum and tranfer function.\n");
-      printf("       Please select the appropriate one.\n");
+      printf("\nERROR: You are running with both power spectrum and transfer function.\n");
+      printf("       Please select the appropriate one.\n\n");
     }
-    errorFlag = 1;
+    FatalError("read_param.c", 339);
   }
 
-#ifndef GAUSSIAN 
+#ifdef GAUSSIAN
+  if((WhichSpectrum == 0) && (WhichTransfer == 0)) {
+    if (ThisTask == 0) {
+      printf("\nERROR: You are running with neither power spectrum nor transfer function.\n");
+      printf("       Please set either WhichSpectrum or WhichTransfer to a non-zero value.\n\n");
+    }
+    FatalError("read_param.c", 348);
+  }
+#else 
   if((WhichSpectrum != 0) || (WhichTransfer == 0)) { 
     if (ThisTask == 0) {
       printf("\nERROR: Non-Gaussian models require the transfer function as input.\n");
-      printf("         Switch WhichSpectrum to zero in the input parameter file.\n");
+      printf("       Switch WhichSpectrum to zero and select a type of transfer function in the input parameter file.\n\n");
     } 
-    errorFlag = 1;
+    FatalError("read_param.c", 356);
   }
 #endif
 #ifdef LOCAL_FNL 
    if(PrimordialIndex != 1.0) {
-     if (ThisTask == 0) printf("\nERROR: Local non-gaussianity with tilted power spectrum requires the GENERIC_FNL option in the Makefile\n");
-     errorFlag = 1;
+     if (ThisTask == 0) printf("\nERROR: Local non-gaussianity with tilted power spectrum requires the GENERIC_FNL option in the Makefile\n\n");
+    FatalError("read_param.c", 362);
    }
 #endif 
 #ifdef ORTHO_FNL 
    if(PrimordialIndex != 1.0) {
-     if (ThisTask == 0) printf("\nERROR: Orthogonal non-gaussianity with tilted power spectrum requires the GENERIC_FNL option in the Makefile\n"); 
-     errorFlag = 1;
+     if (ThisTask == 0) printf("\nERROR: Orthogonal non-gaussianity with tilted power spectrum requires the GENERIC_FNL option in the Makefile\n\n"); 
+    FatalError("read_param.c", 368);
    }
 #endif 
 #ifdef EQUIL_FNL 
    if(PrimordialIndex != 1.0) {
-     if (ThisTask == 0) printf("\nERROR: Equilateral non-gaussianity with tilted power spectrum requires the GENERIC_FNL option in the Makefile\n");
-     errorFlag = 1;
+     if (ThisTask == 0) printf("\nERROR: Equilateral non-gaussianity with tilted power spectrum requires the GENERIC_FNL option in the Makefile\n\n");
+    FatalError("read_param.c", 374);
    }
 #endif 
 

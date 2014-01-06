@@ -360,7 +360,8 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, int timeStep) {
                     P_Vel[0] = fac*(P[n].Vel[0]-sumx+(P[n].Dz[0]*dv1+P[n].D2[0]*dv2)*subtractLPT);
                     P_Vel[1] = fac*(P[n].Vel[1]-sumy+(P[n].Dz[1]*dv1+P[n].D2[1]*dv2)*subtractLPT);
                     P_Vel[2] = fac*(P[n].Vel[2]-sumz+(P[n].Dz[2]*dv1+P[n].D2[2]*dv2)*subtractLPT);
-
+ 
+                   
                     fprintf(fp,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",
                                 (float)(lengthfac*P_Pos[0]),(float)(lengthfac*P_Pos[1]),(float)(lengthfac*P_Pos[2]),(float)(velfac*P_Vel[0]),(float)(velfac*P_Vel[1]),(float)(velfac*P_Vel[2]));
                   }

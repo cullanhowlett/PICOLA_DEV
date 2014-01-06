@@ -26,7 +26,8 @@
 /* v3.0: It annoyed me that we have to convert the tabulate power spectrum from CAMB into a dimensionless    */
 /*       power spectrum, just to convert back again at the first instance, so I changed the 'tabulated Pk'   */
 /*       routines to read in a dimensional Pk file and the 2LPT routines to account for the missing factors  */
-/*       of 2*PI.                                                                                            */
+/*       of 2*PI.
+                                                                                            */
 /* ==========================================================================================================*/
 
 #include "vars.h"
@@ -34,12 +35,10 @@
 
 static int NPowerTable;
 static int NTransferTable;
-static double nu;
 static double R8;
 static double Norm;
 static double klower;
 static double r_tophat;
-static double AA, BB, CC;
 static struct pow_table {
   double logk, logP;
 } *PowerTable;
@@ -57,10 +56,7 @@ void initialize_transferfunction(void) {
    DstartFnl = growthD(FnlTime);
 #endif
 
-   if(WhichTransfer == 2) read_transfer_table();
-   if((WhichTransfer != 0) && (WhichTransfer != 1) && (WhichTransfer !=2)) {
-      if (ThisTask == 0) printf("\nWARNING: Efstathiou transfer function implemented but not recommended.\n\n");
-   }
+   if(WhichTransfer == 1) read_transfer_table();
 }
 
 // Read the Transfer function from an input file (specified in run parameters)
@@ -126,8 +122,10 @@ void read_transfer_table(void) {
   if(ThisTask == 0) printf("klower for transfer function is %lf...\n", klower);
 
   if(TransferTable[0].logk >= -4.6 ) {
-    if (ThisTask == 0) printf("\nERROR: klower may be too large to normalize transfer function.\n\n");
-    //FatalError("power.c", 130);  
+    if (ThisTask == 0) {
+      printf("\nWARNING: klower may be too large to normalize transfer function.\n");
+      printf("         Values outside the input range will be taken to be zero.\n\n");
+    }
   }
   if(TransferTable[NTransferTable].logk <= log10(500./8.)) {
     if (ThisTask == 0) {
@@ -145,7 +143,7 @@ void read_transfer_table(void) {
 // Frees the memory allocated for the tabulated Transfer function (if necessary)
 // =============================================================================
 void free_transfertable(void) {
-  if(WhichTransfer == 2 && TransferTable != NULL) free(TransferTable);
+  if(WhichTransfer == 1 && TransferTable != NULL) free(TransferTable);
 }
 
 // Comparison routine for qsort to sort tabulated Transfer function by k
@@ -164,13 +162,10 @@ double TransferFunc(double k) {
 
   switch (WhichTransfer) {
     case 1:
-      transfer = TransferFunc_EH(k);
-      break;
-    case 2:
       transfer = TransferFunc_Tabulated(k);
       break;
     default:
-      transfer = TransferFunc_Efstathiou(k); 
+      transfer = TransferFunc_EH(k); 
       break;
   }
 
@@ -218,41 +213,24 @@ double TransferFunc_Tabulated(double k) {
   return T;
 }
 
-// Calculate the transfer function at k with Efstathiou parameterisation
-// =====================================================================
-double TransferFunc_Efstathiou(double k) {
-  return tk_Efstathiou(k);
-}
-
-// Calculate the transfer function at k with Eisenstein & Hu parameterisation
-// ==========================================================================
-double TransferFunc_EH(double k) {
-  return tk_eh(k);
-}
-
 // Set up the power spectrum
 // =========================
 void initialize_powerspectrum(void) {
 
   double res;
 
-  AA = 6.4 / ShapeGamma * (3.085678e24 / UnitLength_in_cm);
-  BB = 3.0 / ShapeGamma * (3.085678e24 / UnitLength_in_cm);
-  CC = 1.7 / ShapeGamma * (3.085678e24 / UnitLength_in_cm);
-  nu = 1.13;
-
   // R8 = 8 MPc/h
   R8 = 8 * (3.085678e24 / UnitLength_in_cm);
 
   // Read power spectrum from input file if requested
-  if(WhichSpectrum == 2) read_power_table();
+  if(WhichSpectrum == 1) read_power_table();
 
   Norm = 1.0;
   res = TopHatSigma2(R8);
-  if(ThisTask == 0 && WhichSpectrum == 2) printf("Normalization of spectrum in file: Sigma8 = %lf...\n",sqrt(res));
+  if(ThisTask == 0 && WhichSpectrum == 1) printf("Normalization of spectrum in file: Sigma8 = %lf...\n",sqrt(res));
 
   Norm = Sigma8 * Sigma8 / res;
-  if(ThisTask == 0 && WhichSpectrum == 2) printf("Normalization adjusted to Sigma8=%lf (Normfac=%lf)...\n",Sigma8,Norm);
+  if(ThisTask == 0) printf("Normalization adjusted to Sigma8=%lf (Normfac=%lf)...\n",Sigma8,Norm);
 
   // for WhichSpectrum == 0 do not use power spectrum, only transfer function,
   // the file of which is set in the run parameters
@@ -289,7 +267,7 @@ void read_power_table(void) {
   fclose(fd);
 
   if(ThisTask == 0) {
-    printf("Found %d pairs of values in input power spectrum table...\n", NPowerTable);
+    printf("Task %d Found %d pairs of values in input power spectrum table...\n", ThisTask, NPowerTable);
     fflush(stdout);
   }
 
@@ -339,13 +317,15 @@ void read_power_table(void) {
   if(ThisTask == 0) printf("klower for power spectrum is %f...\n",klower);
 
   if(PowerTable[0].logk >= -4.6 ) {
-    if (ThisTask == 0) printf("\nERROR: klower may be too large to normalize power.\n\n");
-    //FatalError("power.c", 343);  
+    if (ThisTask == 0) {
+      printf("\nWARNING: klower may be too large to normalize power.\n");
+      printf("         Values outside the input range will be taken to be zero.\n\n");
+    }
   }
   if(PowerTable[NTransferTable].logk <= log10(500./8.)) {
     if (ThisTask == 0) {
       printf("\nWARNING: kmax may be too small to normalize the power spectrum.\n");
-      printf("         Values outside the input range will be taken to be zero.\n");
+      printf("         Values outside the input range will be taken to be zero.\n\n");
     }
   }
 
@@ -355,7 +335,7 @@ void read_power_table(void) {
 // Frees the memory allocated for the tabulated Power Spectrum (if necessary)
 // =============================================================================
 void free_powertable(void) {
-  if(WhichSpectrum == 2 && PowerTable != NULL) free(PowerTable);
+  if(WhichSpectrum == 1 && PowerTable != NULL) free(PowerTable);
 }
 
 // Comparison routine for qsort to sort tabulated power spectrum by k
@@ -374,19 +354,13 @@ double PowerSpec(double k) {
 
   switch (WhichSpectrum) {
     case 0:
-      power = Norm * exp ( PrimordialIndex * log (k) ) * TransferFunc(k) * TransferFunc(k);
+      power = Norm * pow(k, PrimordialIndex)  * TransferFunc(k) * TransferFunc(k);
       break;
     case 1:
-      power = PowerSpec_EH(k);
-      power *= pow(k, PrimordialIndex - 1.0);
-      break;
-    case 2:
       power = PowerSpec_Tabulated(k);
-      power *= pow(k, PrimordialIndex - 1.0);
       break;
     default:
-      power = PowerSpec_Efstathiou(k);
-      power *= pow(k, PrimordialIndex - 1.0);
+      power = PowerSpec_EH(k);
       break;
   }
 
@@ -436,27 +410,15 @@ double PowerSpec_Tabulated(double k) {
   return P;
 }
 
-// Calculate the power spectrum at k for a power spectrum with Efstathiou parameterisation
-// =======================================================================================
-double PowerSpec_Efstathiou(double k) {
-  return Norm * k / pow(1 + pow(AA * k + pow(BB * k, 1.5) + CC * CC * k * k, nu), 2 / nu);
-}
-
 // Calculate the power spectrum at k for a power spectrum with Eisenstein & Hu parameterisation
 // ============================================================================================
 double PowerSpec_EH(double k) {
-  return Norm * k * pow(tk_eh(k), 2);
-}
-
-// Transfer function for Efstathiou parameterisation (Transfer function is normalised to 1)
-// ========================================================================================
-double tk_Efstathiou(double k) {
-  return 1.0;
+  return Norm * pow(k, PrimordialIndex) * pow(TransferFunc_EH(k), 2);
 }
 
 // Fitted analytic expressions for Eisenstein & Hu Transfer function from Martin White
 // ===================================================================================
-double tk_eh(double k) {
+double TransferFunc_EH(double k) {
   double q, theta, ommh2, a, s, gamma, L0, C0;
   double tmp;
   double omegam, ombh2, hubble;

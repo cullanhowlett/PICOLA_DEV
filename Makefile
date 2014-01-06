@@ -20,33 +20,36 @@ OPTIMIZE  = -O3 -Wall
 MEMORY_MODE = -DMEMORY_MODE		# Save memory by making sure to allocate and deallocate arrays only when we need them
 OPTIONS += $(MEMORY_MODE)		# and by making the particle data single precision
 
+#PARTICLE_ID = -DPARTICLE_ID             # Assigns unsigned long long ID's to each particle and outputs them. This adds
+#OPTIONS += $(PARTICLE_ID)               # an extra 8 bytes to the storage required for each particle
+
 #LIGHTCONE = -DLIGHTCONE                 # Builds a lightcone based on the run parameters and only outputs particles
 #OPTIONS += $(LIGHTCONE)                 # at a given timestep if they have entered the lightcone 
 
 GAUSSIAN = -DGAUSSIAN                   # Switch this if you want gaussian initial conditions (fnl otherwise)
 OPTIONS += $(GAUSSIAN) 
 
-#LOCAL_FNL = -DLOCAL_FNL                # Switch this if you want only local non-gaussianities
-#OPTIONS += $(LOCAL_FNL)                # NOTE this option is only for invariant inital power spectrum
-                                        # for local with ns != 1 use DGENERIC_FNL and input_kernel_local.txt
+#LOCAL_FNL = -DLOCAL_FNL                 # Switch this if you want only local non-gaussianities
+#OPTIONS += $(LOCAL_FNL)                 # NOTE this option is only for invariant inital power spectrum
+                                         # for local with ns != 1 use DGENERIC_FNL and input_kernel_local.txt
 
-#EQUIL_FNL = -DEQUIL_FNL                # Switch this if you want equilateral Fnl
-#OPTIONS += $(EQUIL_FNL)                # NOTE this option is only for invariant inital power spectrum
-                                        # for local with ns != 1 use DGENERIC_FNL and input_kernel_equil.txt
+#EQUIL_FNL = -DEQUIL_FNL                 # Switch this if you want equilateral Fnl
+#OPTIONS += $(EQUIL_FNL)                 # NOTE this option is only for invariant inital power spectrum
+                                         # for local with ns != 1 use DGENERIC_FNL and input_kernel_equil.txt
 
-#ORTHO_FNL = -DORTHO_FNL                # Switch this if you want ortogonal Fnl
-#OPTIONS += $(ORTHO_FNL)                # NOTE this option is only for invariant inital power spectrum
-                                        # for local with ns != 1 use DGENERIC_FNL and input_kernel_ortog.txt
+#ORTHO_FNL = -DORTHO_FNL                 # Switch this if you want ortogonal Fnl
+#OPTIONS += $(ORTHO_FNL)                 # NOTE this option is only for invariant inital power spectrum
+                                         # for local with ns != 1 use DGENERIC_FNL and input_kernel_ortog.txt
 
-#GENERIC_FNL += -DGENERIC_FNL           # Switch this if you want generic Fnl implementation
-#OPTIONS += $(GENERIC_FNL)              # This option allows for ns != 1 and should include an input_kernel_file.txt 
-                                        # containing the coefficients for the generic kernel 
-                                        # see README and Manera et al astroph/NNNN.NNNN
-                                        # For local, equilateral and orthogonal models you can use the provided files
-                                        # input_kernel_local.txt, input_kernel_equil.txt, input_kernel_orthog.txt 
+#GENERIC_FNL += -DGENERIC_FNL            # Switch this if you want generic Fnl implementation
+#OPTIONS += $(GENERIC_FNL)               # This option allows for ns != 1 and should include an input_kernel_file.txt 
+                                         # containing the coefficients for the generic kernel 
+                                         # see README and Manera et al astroph/NNNN.NNNN
+                                         # For local, equilateral and orthogonal models you can use the provided files
+                                         # input_kernel_local.txt, input_kernel_equil.txt, input_kernel_orthog.txt 
 
-GADGET_STYLE = -DGADGET_STYLE          # Writes all the output in Gadget's '1' style format, with the corresponding
-OPTIONS += $(GADGET_STYLE)             # header and correct velocity units
+GADGET_STYLE = -DGADGET_STYLE           # Writes all the output in Gadget's '1' style format, with the corresponding
+OPTIONS += $(GADGET_STYLE)              # header and correct velocity units
 
 
 # Nothing below here should need changing unless you are adding in/modifying libraries for existing or new machines

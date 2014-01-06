@@ -105,24 +105,24 @@ extern double InputSpectrum_UnitLength_in_cm;  // The unit length (in cm/h) of t
 // Gadget-Style header (most of the information is redundant for PICOLA)
 #ifdef GADGET_STYLE
 extern struct io_header_1 {
-  char fill[84];              // Fills to 256 Bytes
-  int num_files;              // Determines the number of files that are used for a snapshot
+  unsigned int npart[6];      // npart[1] gives the number of particles in the file, other particle types are ignored
+  double mass[6];             // mass[1] gives the particle mass
+  double time;                // Cosmological scale factor of snapshot
+  double redshift;            // redshift of snapshot
   int flag_sfr;               // Flags whether star formation is used
   int flag_feedback;          // Flags whether feedback from star formation is included
+  unsigned int npartTotal[6]; // npart[1] gives the total number of particles in the run. If this number exceeds 2^32, the npartTotal[2] stores
+                              // the result of a division of the particle number by 2^32, while npartTotal[1] holds the remainder.
   int flag_cooling;           // Flags whether radiative cooling is included
+  int num_files;              // Determines the number of files that are used for a snapshot
+  double BoxSize;             // Simulation box size (in code units)
+  double Omega0;              // matter density
+  double OmegaLambda;         // vacuum energy density
+  double HubbleParam;         // little 'h'
   int flag_stellarage;        // flags whether the age of newly formed stars is recorded and saved
   int flag_metals;            // flags whether metal enrichment is included
   int hashtabsize;            // gives the size of the hashtable belonging to this snapshot file
-  unsigned int npart[6];      // npart[1] gives the number of particles in the file, other particle types are ignored
-  unsigned int npartTotal[6]; // npart[1] gives the total number of particles in the run. If this number exceeds 2^32, the npartTotal[2] stores
-                              // the result of a division of the particle number by 2^32, while npartTotal[1] holds the remainder.
-  double time;                // Cosmological scale factor of snapshot
-  double Omega0;              // matter density
-  double BoxSize;             // Simulation box size (in code units)
-  double mass[6];             // mass[1] gives the particle mass
-  double redshift;            // redshift of snapshot
-  double OmegaLambda;         // vacuum energy density
-  double HubbleParam;         // little 'h'
+  char fill[84];              // Fills to 256 Bytes
 }
 header;
 #endif
@@ -168,7 +168,9 @@ extern struct part_data {
 #ifdef LIGHTCONE
   int Flag;                // A flag to say whether or not a given particle has left the lightcone
 #endif
+#ifdef PARTICLE_ID
   unsigned long long ID;   // The Particle ID
+#endif
   float Dz[3];             // The Zeldovich displacment of the particle in the X, Y and Z directions
   float D2[3];             // The 2LPT displacment of the particle in the X, Y and Z directions
   float Pos[3];            // The position of the particle in the X, Y and Z directions
@@ -182,7 +184,9 @@ extern struct part_data {
 #ifdef LIGHTCONE
   int Flag;                   // A flag to say whether or not a given particle has left the lightcone
 #endif
+#ifdef PARTICLE_ID
   unsigned long long ID;      // The particle ID
+#endif
   float_kind Dz[3];           // The Zeldovich displacment of the particle in the X, Y and Z directions
   float_kind D2[3];           // The 2LPT displacment of the particle in the X, Y and Z directions
   float_kind Pos[3];          // The position of the particle in the X, Y and Z directions

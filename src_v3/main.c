@@ -100,24 +100,18 @@ int main(int argc, char **argv) {
       case 0:
         switch (WhichTransfer) {
           case 1:
-            printf("  Using Eisenstein & Hu Transfer Function\n");
-            break;
-          case 2:
             printf("  Using Tabulated Transfer Function\n");
             break;
           default:
-            printf("  Using Efstathiou Transfer Function\n");
+            printf("  Using Eisenstein & Hu Transfer Function\n");
             break;
         }
         break;
       case 1:
-        printf("  Using Eisenstein & Hu Power Spectrum\n");
-        break;
-      case 2:
         printf("  Using Tabulated Power Spectrum\n");
         break;   
       default:
-        printf("  Using Efstathiou Power Spectrum\n");
+        printf("  Using Eisenstein & Hu Power Spectrum\n");
         break;
     }      
     if (UseCOLA) {
@@ -182,8 +176,11 @@ int main(int argc, char **argv) {
     for (j=0; j<Nsample; j++) {
       for (k=0; k<Nsample; k++) {
         coord = (i * Nsample + j) * Nsample + k;
-           
+
+#ifdef PARTICLE_ID          
         P[coord].ID = ((unsigned long long)((i + Local_p_start) * Nsample + j)) * (unsigned long long)Nsample + (unsigned long long)k;
+#endif
+
         for (m=0; m<3; m++) {
           P[coord].Dz[m] = ZA[m][coord];
           P[coord].D2[m] = LPT[m][coord];
@@ -574,6 +571,9 @@ void Output(double A, double Dv, double Dv2) {
   size_t bytes;
   int k, pc, dummy, blockmaxlen;
   float * block;
+#ifdef PARTICLE_ID
+  unsigned long long * blockid;
+#endif
 
   for (n=0; n<NumPart; n++) {
     P[n].Pos[0] *= lengthfac;
@@ -632,7 +632,14 @@ void Output(double A, double Dv, double Dv2) {
         my_fwrite(&header, sizeof(header), 1, fp);
         my_fwrite(&dummy, sizeof(dummy), 1, fp);
 
-        block = (float *)malloc(bytes = 10 * 1024 * 1024);
+        // We may have some spare memory from deallocating the force grids so use that for outputting
+        // If not we are a little more conservative
+#ifdef MEMORY_MODE
+        block = (float *)malloc(bytes = 6*Total_size*sizeof(float_kind));
+        //block = (float *)malloc(bytes = 10*1024*1024);
+#else
+        block = (float *)malloc(bytes = 10*1024*1024);
+#endif
         blockmaxlen = bytes / (3 * sizeof(float));
 
         // write coordinates
@@ -650,7 +657,6 @@ void Output(double A, double Dv, double Dv2) {
         my_fwrite(&dummy, sizeof(dummy), 1, fp);
 
         // write velocities
-        dummy = sizeof(float) * 3 * NumPart;
         my_fwrite(&dummy, sizeof(dummy), 1, fp);
         for(n = 0, pc = 0; n < NumPart; n++) {
           for(k = 0; k < 3; k++) block[3 * pc + k] = (float)P[n].Vel[k];
@@ -663,6 +669,25 @@ void Output(double A, double Dv, double Dv2) {
         if(pc > 0) my_fwrite(block, sizeof(float), 3 * pc, fp);
         my_fwrite(&dummy, sizeof(dummy), 1, fp);
 
+#ifdef PARTICLE_ID
+        blockid = (unsigned long long *)block;
+        blockmaxlen = bytes / sizeof(unsigned long long);
+
+        // write particle ID
+        dummy = sizeof(unsigned long long) * NumPart;
+        my_fwrite(&dummy, sizeof(dummy), 1, fp);
+        for(n = 0, pc = 0; n < NumPart; n++) {
+          blockid[pc] = P[n].ID;
+          pc++;
+          if(pc == blockmaxlen) {
+	    my_fwrite(blockid, sizeof(unsigned long long), pc, fp);
+	    pc = 0;
+	  }
+        }
+        if(pc > 0) my_fwrite(blockid, sizeof(unsigned long long), pc, fp);
+        my_fwrite(&dummy, sizeof(dummy), 1, fp);
+#endif
+
         free(block);   
 #else
         for(n=0; n<NumPart; n++){
@@ -670,8 +695,13 @@ void Output(double A, double Dv, double Dv2) {
           P_Vel[0] = fac*(P[n].Vel[0]-sumx+(P[n].Dz[0]*Dv+P[n].D2[0]*Dv2)*subtractLPT);
           P_Vel[1] = fac*(P[n].Vel[1]-sumy+(P[n].Dz[1]*Dv+P[n].D2[1]*Dv2)*subtractLPT);
           P_Vel[2] = fac*(P[n].Vel[2]-sumz+(P[n].Dz[2]*Dv+P[n].D2[2]*Dv2)*subtractLPT);
+#ifdef PARTICLE_ID
           fprintf(fp,"%12llu %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",
                       P[n].ID, (float)(lengthfac*P[n].Pos[0]),(float)(lengthfac*P[n].Pos[1]),(float)(lengthfac*P[n].Pos[2]),(float)(velfac*P_Vel[0]),(float)(velfac*P_Vel[1]),(float)(velfac*P_Vel[2]));
+#else
+          fprintf(fp,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",
+                      (float)(lengthfac*P[n].Pos[0]),(float)(lengthfac*P[n].Pos[1]),(float)(lengthfac*P[n].Pos[2]),(float)(velfac*P_Vel[0]),(float)(velfac*P_Vel[1]),(float)(velfac*P_Vel[2]));
+#endif
         }
 #endif
         fclose(fp);

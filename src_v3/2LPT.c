@@ -439,8 +439,8 @@ void displacement_fields(void) {
             if(fabs(kvec[2]) * Box / (2 * PI) > Nsample / 2) continue;
           }
 
-          phig = -log(ampl) * Anorm * exp(PrimordialIndex * log(kmag));  // initial normalized power
-          phig = sqrt(phig) * pow(Box,-1.5) * Beta * DstartFnl / kmag2;            // amplitude of the initial gaussian potential
+          phig = -log(ampl) * Anorm * pow(kmag, PrimordialIndex);            // initial normalized power
+          phig = sqrt(phig) * pow(Box,-1.5) * Beta * DstartFnl / kmag2;      // amplitude of the initial gaussian potential
                
           if(k > 0) {
             if(i >= Local_x_start && i < (Local_x_start + Local_nx)) {
