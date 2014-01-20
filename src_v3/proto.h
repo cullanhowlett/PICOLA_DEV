@@ -26,7 +26,7 @@
 // main.c
 void Output(double A, double Dv, double Dv2);
 void Kick(double AI, double AF, double A, double Di);
-void Drift(double A, double AFF, double AF, double Di);
+void Drift(double A, double AFF, double AF, double Di, double Di2);
 
 // cosmo.c
 double gpQ(double a);
@@ -80,9 +80,10 @@ void read_kernel_table(void);
 // lightcone.c
 #ifdef LIGHTCONE
 void set_lightcone(void);
+void Output_Lightcone(unsigned int pc, int timeStep, float * block);
 void flag_replicates(double Rcomov_old2, double Rcomov_new2, double boundary);
-void Drift_Lightcone(double A, double AFF, double AF, double Di, int timeStep);
 double nearest_dist(double px, double py, double ix, double iy, double jx, double jy);
+void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2, int timeStep);
 #endif
 
 // 2LPT.c

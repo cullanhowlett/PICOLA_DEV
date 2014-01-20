@@ -286,11 +286,29 @@ int main(int argc, char **argv) {
     // ========================================================
     for (timeStep=0;timeStep<nsteps;timeStep++) {
 
+      // Calculate the time to update to
+      // Half timestep for kick at output redshift to bring the velocities and positions to the same time
+      if ((timeStep == 0) && (i != NoutputStart)) {
+        AF=A; 
+      } else { 
+        // Set to mid-point of interval. In the infinitesimal timestep limit, these choices are identical. 
+        // How one chooses the mid-point when not in that limit is really an extra degree of freedom in the code 
+        // but Tassev et al. report negligible effects from the different choices below. 
+        // Hence, this is not exported as an extra switch at this point.
+        if (stepDistr == 0) AF=A+da*0.5;
+        if (stepDistr == 1) AF=A*exp(da*0.5);
+        if (stepDistr == 2) AF=AofTime((CosmoTime(AFF)+CosmoTime(A))*0.5); 
+      }
+
+      if (stepDistr == 0) AFF=A+da;
+      if (stepDistr == 1) AFF=A*exp(da);
+      if (stepDistr == 2) AFF=AofTime(CosmoTime(A)+da);
+
       timeSteptot++;
       if (ThisTask == 0) {
         printf("Iteration = %d\n------------------\n",timeSteptot);
-        printf("a = %lf\n",A);
-        printf("z = %lf\n",1.0/A-1.0);
+        printf("a = %lf -> a = %lf\n", A, AFF);
+        printf("z = %lf -> z = %lf\n", 1.0/A-1.0, 1.0/AFF-1.0);
         fflush(stdout);
       }
 
@@ -307,22 +325,9 @@ int main(int argc, char **argv) {
 
       /**********************************************************************************************/
       // If we wanted to interpolate the lightcone velocities we could put section currently in the // 
-      // Drift subroutine here. This would allow us the have the velocities at AF and AFF which we  //
+      // Drift subroutine here. This would allow us to have the velocities at AF and AFF which we   //
       // can use to invert the previous drift step and get the particle positions at AF and AFF     //                                                                                             //
       /**********************************************************************************************/
-
-      // Half timestep for kick at output redshift to bring the velocities and positions to the same time
-      if ((timeStep == 0) && (i != NoutputStart)) {
-        AF=A; 
-      } else { 
-        // Set to mid-point of interval. In the infinitesimal timestep limit, these choices are identical. 
-        // How one chooses the mid-point when not in that limit is really an extra degree of freedom in the code 
-        // but Tassev et al. report negligible effects from the different choices below. 
-        // Hence, this is not exported as an extra switch at this point.
-        if (stepDistr == 0) AF=A+da*0.5;
-        if (stepDistr == 1) AF=A*exp(da*0.5);
-        if (stepDistr == 2) AF=AofTime((CosmoTime(AFF)+CosmoTime(A))*0.5); 
-      }
 
       Kick(AI,AF,A,Di);
 
@@ -381,18 +386,14 @@ int main(int argc, char **argv) {
         fflush(stdout);
       }
 
-      if (stepDistr == 0) AFF=A+da;
-      if (stepDistr == 1) AFF=A*exp(da);
-      if (stepDistr == 2) AFF=AofTime(CosmoTime(A)+da);
-
 #ifdef LIGHTCONE
       if (i == Noutputs-1) {
-        Drift_Lightcone(A,AFF,AF,Di,timeStep);
+        Drift_Lightcone(A,AFF,AF,Di,Di2,timeStep);
       } else {
-        Drift(A,AFF,AF,Di);
+        Drift(A,AFF,AF,Di,Di2);
       }
 #else
-      Drift(A,AFF,AF,Di);
+      Drift(A,AFF,AF,Di,Di2);
 #endif
 
 
@@ -402,6 +403,7 @@ int main(int argc, char **argv) {
       AI = AF; 
 
       Di = growthD(A);
+      Di2 = growthD2(A);
 
       if (ThisTask == 0) {
         printf("Iteration %d finished\n------------------\n\n", timeSteptot);
@@ -525,7 +527,7 @@ void Kick(double AI, double AF, double A, double Di) {
 
 // Drifting the particle positions
 // ===============================
-void Drift(double A, double AFF, double AF, double Di) {
+void Drift(double A, double AFF, double AF, double Di, double Di2) {
 
   unsigned int n;
   double dyyy;
@@ -540,7 +542,7 @@ void Drift(double A, double AFF, double AF, double Di) {
   }
 
   da1=growthD(AFF)-Di;    // change in D
-  da2=growthD2(AFF)-growthD2(A); // change in D_{2lpt}
+  da2=growthD2(AFF)-Di2; // change in D_{2lpt}
 
   for(n=0; n<NumPart; n++) {
     P[n].Pos[0] += (P[n].Vel[0]-sumx)*dyyy;
@@ -566,7 +568,6 @@ void Output(double A, double Dv, double Dv2) {
   double lengthfac = UnitLength_in_cm/3.085678e24;     // Convert positions to Mpc/h
   double velfac    = UnitVelocity_in_cm_per_s/1.0e5;   // Convert velocities to km/s
 
-  // Remember to add the ZA and 2LPT velocities back on and convert to PTHalos velocity units
 #ifdef GADGET_STYLE
   size_t bytes;
   int k, pc, dummy, blockmaxlen;
@@ -574,16 +575,6 @@ void Output(double A, double Dv, double Dv2) {
 #ifdef PARTICLE_ID
   unsigned long long * blockid;
 #endif
-
-  for (n=0; n<NumPart; n++) {
-    P[n].Pos[0] *= lengthfac;
-    P[n].Pos[1] *= lengthfac;
-    P[n].Pos[2] *= lengthfac;
-
-    P[n].Vel[0] = velfac*fac*(P[n].Vel[0]-sumx+(P[n].Dz[0]*Dv+P[n].D2[0]*Dv2)*subtractLPT);
-    P[n].Vel[1] = velfac*fac*(P[n].Vel[1]-sumy+(P[n].Dz[1]*Dv+P[n].D2[1]*Dv2)*subtractLPT);
-    P[n].Vel[2] = velfac*fac*(P[n].Vel[2]-sumz+(P[n].Dz[2]*Dv+P[n].D2[2]*Dv2)*subtractLPT);
-  }
 #endif
 
   nprocgroup = NTask / NumFilesWrittenInParallel;
@@ -636,17 +627,18 @@ void Output(double A, double Dv, double Dv2) {
         // If not we are a little more conservative
 #ifdef MEMORY_MODE
         block = (float *)malloc(bytes = 6*Total_size*sizeof(float_kind));
-        //block = (float *)malloc(bytes = 10*1024*1024);
 #else
         block = (float *)malloc(bytes = 10*1024*1024);
 #endif
         blockmaxlen = bytes / (3 * sizeof(float));
 
+        // Remember to add the ZA and 2LPT velocities back on and convert to PTHalos velocity units
+
         // write coordinates
         dummy = sizeof(float) * 3 * NumPart;
         my_fwrite(&dummy, sizeof(dummy), 1, fp);
         for(n = 0, pc = 0; n < NumPart; n++) {
-          for(k = 0; k < 3; k++) block[3 * pc + k] = (float)P[n].Pos[k];
+          for(k = 0; k < 3; k++) block[3 * pc + k] = (float)(lengthfac*P[n].Pos[k]);
           pc++;
           if(pc == blockmaxlen) {
             my_fwrite(block, sizeof(float), 3 * pc, fp);
@@ -659,7 +651,7 @@ void Output(double A, double Dv, double Dv2) {
         // write velocities
         my_fwrite(&dummy, sizeof(dummy), 1, fp);
         for(n = 0, pc = 0; n < NumPart; n++) {
-          for(k = 0; k < 3; k++) block[3 * pc + k] = (float)P[n].Vel[k];
+          for(k = 0; k < 3; k++) block[3 * pc + k] = (float)(velfac*fac*(P[n].Vel[k]-sumx+(P[n].Dz[k]*Dv+P[n].D2[k]*Dv2)*subtractLPT));
           pc++;
           if(pc == blockmaxlen) {
 	    my_fwrite(block, sizeof(float), 3 * pc, fp);
@@ -709,18 +701,6 @@ void Output(double A, double Dv, double Dv2) {
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }
-
-#ifdef GADGET_STYLE
-  for (n=0; n<NumPart; n++) {
-    P[n].Pos[0] /= lengthfac;
-    P[n].Pos[1] /= lengthfac;
-    P[n].Pos[2] /= lengthfac;
-
-    P[n].Vel[0] = P[n].Vel[0]/(velfac*fac)+sumx-(P[n].Dz[0]*Dv+P[n].D2[0]*Dv2)*subtractLPT;
-    P[n].Vel[1] = P[n].Vel[1]/(velfac*fac)+sumy-(P[n].Dz[1]*Dv+P[n].D2[1]*Dv2)*subtractLPT;
-    P[n].Vel[2] = P[n].Vel[2]/(velfac*fac)+sumz-(P[n].Dz[2]*Dv+P[n].D2[2]*Dv2)*subtractLPT;
-  }
-#endif  
  
   return;
 }

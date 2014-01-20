@@ -33,6 +33,7 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_errno.h>
+#include <gsl/gsl_spline.h>
 #include <gsl/gsl_sf_hyperg.h> 
 #include <gsl/gsl_sort_double.h>
 #include <gsl/gsl_integration.h>
