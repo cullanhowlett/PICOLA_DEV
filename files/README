@@ -1,0 +1,132 @@
+    PICOLA v1.0, June 2013
+    Authors: Cullan Howlett & Marc Manera (ICG, Portsmouth)
+
+    This code is PICOLA: A Parallel Implementation of the COLA 
+    (COmoving Lagrangian Acceleration) method described in 
+    S. Tassev, M. Zaldarriaga, D. Eisenstein 2013 (arXiv:1301.0322).
+
+    * To compile the code, one needs the GSL, MPI and FFTW-3 (Serial and MPI) libraries.
+    * Run "make" to compile. 
+    * Run "./PICOLA" to run the code.
+
+    In PICOLA, The COLA method is applied to a PM-based N-body code as in the public release
+    of COLAcode (Dec 2012), albeit with multiple improvements to the code, including full
+    parallelisation and inclusion of the 2LPTic code, from which COLAcode
+    takes its initial conditions (references below), directly into the main routines.
+
+    In this sense PICOLA can be seen as an amalgamation of both COLAcode and 2LPTic
+    where a not unsubstantial amount of effort has been put in to both to make them 
+    compatible and simultaneously improve both. Obviously this means that this work
+    relies fundamentally on the work others have put into creating the aforementioned
+    codes, and so we kindly ask that any work using this code reference the following
+    papers:
+
+      Solving Large Scale Structure in Ten Easy Steps with COLA,
+      S. Tassev, M. Zaldarriaga and D. Eisenstein, 2013, (arXiv:1301.0322).
+
+      Transients from Initial Conditions in Cosmological Simulations
+      M. Crocce, S. Pueblas, R. Scoccimarro, 2006, (arXiv:0606505).
+
+    Also, we have included the original desciption of COLAcode, as in the 
+    Dec 2012 version, below:
+
+    =======================================================================================================================================
+    >> Author: Svetlin V. Tassev (Harvard U, Princeton U)
+    >> Initial public release date: Jun 6, 2012
+    >>
+    >> This is COLAcode: a serial particle mesh-based N-body code 
+    >> illustrating the COLA (COmoving Lagrangian Acceleration) method 
+    >> described in S. Tassev, M. Zaldarriaga, D. Eisenstein (2012).
+    >> Check that paper (refered to as TZE below) for the details. 
+    >> Before using the code make sure you read the README file as well as
+    >> the Warnings section below.
+    >>
+    >> This version: Dec 18, 2012
+    >> --------------------------
+    >>
+    >> The code solves Newton's equation in the form (eq. (A.1) of TZE):
+    >> d^2 (s)/dy^2 = - (3/2)*Omega_matter(a=1)*a*grad_x grad_x^(-2) \delta
+    >> or its COLA modification. Above $y$ is defined as
+    >> d/dy \equiv a/H_0*d/d\eta, 
+    >> which is equivalent to T[]=d/dy in the notation of the paper.
+    >> \eta = conformal time
+    >> s = the displacement vector in comoving [Mpc/h]
+    >> delta = fractional overdensity
+    >> a = scale factor
+    >> 
+    >> Velocity variable in the code is defined as:
+    >> vel\equiv T[s] = ds/dy =  Q*ds/da, 
+    >> where Q\equiv a^3 H(a)/H0. 
+    >>     
+    >> At the end of main() we change the velocity variable to v_{rsd}=(ds/d\eta)/(a*H(a)), 
+    >> which is in comoving [Mpc/h], and can be directly added to $s$ to get the 
+    >> particle position in redshift space.
+    >> 
+    >> When we subtract LPT, the new velocity variable is 
+    >> d(s-s_LPT)/dy, so initially it is set to zero, as we see below. 
+    >> It is converted to ds/dy in the last timestep. And then again to v_{rsd}
+    >> at the end of main().
+    >>
+    >>
+    >> Description of switches:
+    >> ------------------------ 
+    >> useCOLA -- All it does is set sane values for the rest of the switches. 
+    >>    Note that "sane" values does not mean optimal!
+    >>    When set to 1 the code uses the COLA method. 
+    >>    Set to 0 for standard non-COLA N-body.
+    >>     
+    >> subtractLPT -- Whether to subtract LPT displacements. 
+    >>    Set this to 1 to subtract the LPT displacements as the COLA method prescribes. 
+    >>    Otherwise, set to 0 for standard non-COLA approach.
+    >>     
+    >> stepDistr -- How to distribute the timesteps between 
+    >>    the initial and final time.
+    >>    stepDistr=0 -- uniformly in $a$ 
+    >>    stepDistr=1 -- uniformly in $log(a)$. 
+    >>    stepDistr=2 -- uniformly distributed in a user defined
+    >>       variable E=CosmoTime(a). As an example E is set to cosmic time in the code.
+    >>  
+    >> StdDA -- Whether to assume standard or non-standard time-dependence for 
+    >>    the (residual) displacement in the non-COLA (COLA) implementation.
+    >>    StdDA=0 is the modified COLA time-stepping (see eq. (A.15) in TZE).
+    >>    StdDA=1 is non-integral standard stepping. (Avoid! Just for debugging.)
+    >>    StdDA=2 is the integral (Quinn et al (1997), astro-ph/9710043) 
+    >>      standard stepping. Equivalent to equations A.3 (non-COLA) and A.7 (COLA) in TZE.
+    >>     
+    >> When StdDA=0, one needs to set fullT and nLPT.
+    >>    fullT=0 assumes time dependence for velocity = A + B a^nLPT, with A>>B a^nLPT. (A and B are irrelevant)
+    >>    fullT=1 assumes time dep. for velocity = B a^nLPT
+    >>    nLPT is a real number. Sane values lie in the range (-4,3.5). Cannot be 0, but of course can be -> 0 (say 0.001).
+    >>    See Section A.3 of TZE.
+    >> 
+    >> 
+    >> !!!!!!!!!!!!!!!!!!!!!!!!!!
+    >>          WARNINGS 
+    >> !!!!!!!!!!!!!!!!!!!!!!!!!!
+    >>  
+    >>  0. We do not claim the code to be optimized in any way! 
+    >>     It is written more as an illustration of how to 
+    >>     implement the COLA method in an existing N-body code 
+    >>     rather than for production purposes.
+    >>   
+    >>  1. As written, the code assumes grid-like initial conditions. The reason
+    >>     lies in the way we extract the ZA and 2LPT displacements from the 2LPTic code output.
+    >>     This is easily fixable for glass-like IC but is not done below.
+    >>    
+    >>  2. The code assumes input from Roman Scoccimarro's serial FORTRAN 2LPTic code.
+    >>     Since that code is in FORTRAN, indices of flat 3D arrays are reversed ordered compared to C. 
+    >>     We use rearrange() function below to fix that. For other IC, one may need to 
+    >>     remove the calls to that function, as well as change the FORTRAN-style orderings in some of
+    >>     the other functions.
+    >>    
+    >>  3. Filenames, number of files per snapshot, OmegaMatter, z_{initial}, z_{final} 
+    >>     and switch values are all hardcoded below. Change them appropriately!
+    >>     
+    >>  4. As written, the input needed by the code is a ZA snapshot from 2LPTic at z=0, 
+    >>     and a second snapshot from 2LPTic for ZA+2LPT again at z=0. The initial 
+    >>     conditions at z_initial are calculated in the code below from those two snapshots.
+    >>      
+    >>  5. For the output of the code, check the comments in the end of main().   
+    >>    
+    >>  6. Assume flat cosmology throughout.
+    ======================================================================================================================================
