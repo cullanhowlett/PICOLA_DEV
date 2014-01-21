@@ -440,7 +440,7 @@ void Output_Lightcone(unsigned int pc, int timeStep, float * block) {
   char buf[300];
   int nprocgroup, groupTask, masterTask;
 #ifdef GADGET_STYLE
-  int dummy;
+  int dummy1, dummy2;
 #else
   unsigned int n;
 #endif
@@ -466,10 +466,14 @@ void Output_Lightcone(unsigned int pc, int timeStep, float * block) {
         }
 #ifdef GADGET_STYLE
         // write coordinates and velocities in unformatted binary
-        dummy = sizeof(float) * 6 * pc;
-        my_fwrite(&dummy, sizeof(dummy), 1, fp);
+        dummy1 = sizeof(pc); 
+        dummy2 = sizeof(float) * 6 * pc;
+        my_fwrite(&dummy1, sizeof(dummy1), 1, fp);
+        my_fwrite(&pc, sizeof(pc), 1, fp);
+        my_fwrite(&dummy1, sizeof(dummy1), 1, fp);
+        my_fwrite(&dummy2, sizeof(dummy2), 1, fp);
         my_fwrite(block, sizeof(float), 6 * pc, fp);
-        my_fwrite(&dummy, sizeof(dummy), 1, fp);
+        my_fwrite(&dummy2, sizeof(dummy2), 1, fp);
 #else
         // write coordinates and velocities in ASCII
         for(n=0; n<pc; n++) fprintf(fp,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",block[6*n],block[6*n+1],block[6*n+2],block[6*n+3],block[6*n+4],block[6*n+5]);

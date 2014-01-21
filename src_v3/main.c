@@ -307,9 +307,14 @@ int main(int argc, char **argv) {
       timeSteptot++;
       if (ThisTask == 0) {
         printf("Iteration = %d\n------------------\n",timeSteptot);
-        printf("a = %lf -> a = %lf\n", A, AFF);
-        printf("z = %lf -> z = %lf\n", 1.0/A-1.0, 1.0/AFF-1.0);
-        fflush(stdout);
+        if (i != Noutputs) {
+          printf("a = %lf -> a = %lf\n", A, AFF);
+          printf("z = %lf -> z = %lf\n", 1.0/A-1.0, 1.0/AFF-1.0);
+          fflush(stdout);
+        } else {
+          printf("Half timestep to update velocities...\n");
+          fflush(stdout);
+        }
       }
 
       // Calculate the particle accelerations for this timestep
@@ -542,7 +547,7 @@ void Drift(double A, double AFF, double AF, double Di, double Di2) {
   }
 
   da1=growthD(AFF)-Di;    // change in D
-  da2=growthD2(AFF)-Di2; // change in D_{2lpt}
+  da2=growthD2(AFF)-Di2;  // change in D_{2lpt}
 
   for(n=0; n<NumPart; n++) {
     P[n].Pos[0] += (P[n].Vel[0]-sumx)*dyyy;

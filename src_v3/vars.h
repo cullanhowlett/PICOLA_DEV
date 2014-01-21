@@ -166,9 +166,6 @@ extern float * Disp[3];    // Vectors to hold the particle displacements each ti
 extern float * ZA[3];      // Vectors to hold the Zeldovich displacements before particle initialisation
 extern float * LPT[3];     // Vectors to hold the 2LPT displacements before particle initialisation
 extern struct part_data { 
-#ifdef LIGHTCONE
-  int Flag;                // A flag to say whether or not a given particle has left the lightcone
-#endif
 #ifdef PARTICLE_ID
   unsigned long long ID;   // The Particle ID
 #endif
@@ -182,9 +179,6 @@ extern float_kind * Disp[3];  // vectors to hold the particle displacements each
 extern float_kind * ZA[3];    // Vectors to hold the Zeldovich displacements before particle initialisation
 extern float_kind * LPT[3];   // Vectors to hold the 2LPT displacements before particle initialisation
 extern struct part_data {
-#ifdef LIGHTCONE
-  int Flag;                   // A flag to say whether or not a given particle has left the lightcone
-#endif
 #ifdef PARTICLE_ID
   unsigned long long ID;      // The particle ID
 #endif

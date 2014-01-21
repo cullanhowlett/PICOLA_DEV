@@ -48,13 +48,13 @@ void read_outputs(void) {
       if(buf[0] == '%') continue;
       if(sscanf(buf, "%lf, %d", &red, &nsteps) > 0) {
         if(sscanf(buf, "%lf, %d", &red, &nsteps) != 2) {
-          if(ThisTask == 0) fprintf(stdout,"\nERROR: Line in Output Redshift File '%s' is in incorrect format.\n",buf);
+          if(ThisTask == 0) fprintf(stdout,"\nERROR: Line in Output Redshift File '%s' is in incorrect format.\n\n",buf);
           fclose(fd);
           FatalError("read_param.c", 53);
         }
         if (nsteps <= 0) {
           if ((Init_Redshift-red)/Init_Redshift > 1.0E-6) {
-            if(ThisTask == 0) fprintf(stdout,"\nERROR: I read a value for nsteps of <= 0 up to redshift %lf.\n", red);
+            if(ThisTask == 0) fprintf(stdout,"\nERROR: I read a value for nsteps of <= 0 up to redshift %lf.\n\n", red);
             fclose(fd);
             FatalError("read_param.c", 59);
           }
@@ -66,12 +66,12 @@ void read_outputs(void) {
     }
     fclose(fd);
   } else {
-    if(ThisTask == 0) fprintf(stdout,"\nERROR: Output Redshift File '%s' not found.\n",OutputRedshiftFile);
+    if(ThisTask == 0) fprintf(stdout,"\nERROR: Output Redshift File '%s' not found.\n\n",OutputRedshiftFile);
     FatalError("read_param.c", 70);
   }
 
   if (Noutputs == 0) {
-    if(ThisTask == 0) fprintf(stdout,"\nERROR: Found no output redshifts in file '%s'. Surely this is accidental?.\n",OutputRedshiftFile);
+    if(ThisTask == 0) fprintf(stdout,"\nERROR: Found no output redshifts in file '%s'. Surely this is accidental?.\n\n",OutputRedshiftFile);
     FatalError("read_param.c", 75);
   }
 
@@ -79,7 +79,7 @@ void read_outputs(void) {
   qsort(OutputList,Noutputs,sizeof(struct Outputs),sort_redshift);
 
   if (OutputList[0].Redshift > Init_Redshift) {
-    if(ThisTask == 0) fprintf(stdout,"\nERROR: The highest output redshift (%lf) is greater than the initial redshift (%lf).\n", OutputList[0].Redshift, Init_Redshift);
+    if(ThisTask == 0) fprintf(stdout,"\nERROR: The highest output redshift (%lf) is greater than the initial redshift (%lf).\nzn", OutputList[0].Redshift, Init_Redshift);
     FatalError("read_param.c", 83);
   }
 
@@ -87,7 +87,7 @@ void read_outputs(void) {
   if (Noutputs != 2) {
     if(ThisTask == 0) {
       fprintf(stdout,"\nERROR: Number of output redshifts for lightcone simulation not equal to 2.\n");
-      fprintf(stdout,"       For lightcone we output every step and so only need the redshift to start the lightcone at and the final redshift.\n");
+      fprintf(stdout,"       For lightcone we output every step and so only need the redshift to start the lightcone at and the final redshift.\n\n");
     }
     FatalError("read_param.c", 92);
   }
@@ -102,7 +102,7 @@ int sort_redshift(const void * Item1, const void * Item2) {
   struct Outputs * Output2 = (struct Outputs *)Item2;
   if((*Output1).Redshift > (*Output2).Redshift) return -1;
   if((*Output1).Redshift < (*Output2).Redshift) return 1;
-  if(ThisTask == 0) fprintf(stdout,"\nERROR: Duplicate output redshift (%lf) in Output Redshift File.\n", (*Output1).Redshift);
+  if(ThisTask == 0) fprintf(stdout,"\nERROR: Duplicate output redshift (%lf) in Output Redshift File.\n\n", (*Output1).Redshift);
   FatalError("read_param.c", 106);
   return 0;
 }
