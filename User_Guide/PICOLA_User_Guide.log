@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.7.11)  7 FEB 2014 12:13
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.11.26)  7 FEB 2014 12:44
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -582,7 +582,7 @@ Package: natbib 2010/09/13 8.31b (PWD, AO)
 \bibsep=\skip78
 LaTeX Info: Redefining \cite on input line 694.
 \c@NAT@ctr=\count152
-) (../macros.tex) (./PICOLA_User_Guide.aux)
+) (./macros.tex) (./PICOLA_User_Guide.aux)
 \openout1 = `PICOLA_User_Guide.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 31.
@@ -722,9 +722,9 @@ LaTeX Warning: Text page 16 contains only floats.
 
 [16] [17] (./PICOLA_User_Guide.aux) ) 
 Here is how much of TeX's memory you used:
- 11046 strings out of 493315
- 193991 string characters out of 6137904
- 264805 words of memory out of 5000000
+ 11045 strings out of 493315
+ 193984 string characters out of 6137903
+ 264802 words of memory out of 5000000
  14327 multiletter control sequences out of 15000+600000
  11023 words of font info for 40 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
@@ -745,7 +745,7 @@ msfonts/cm/cmsy8.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/public/ams
 fonts/cm/cmti12.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsf
 onts/cm/cmtt12.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/public/cm-su
 per/sfrm1200.pfb>
-Output written on PICOLA_User_Guide.pdf (17 pages, 192447 bytes).
+Output written on PICOLA_User_Guide.pdf (17 pages, 193150 bytes).
 PDF statistics:
  116 PDF objects out of 1000 (max. 8388607)
  82 compressed objects within 1 object stream
