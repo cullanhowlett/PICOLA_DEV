@@ -10,6 +10,18 @@ void set_lightcone(void) {
   // Calculate the actual maximum number of replicate boxes we need in all six directions. This allows
   // us to remove replicates that are unnecessary
   double Rcomov_max = Light/Hubble*SphiStd(1.0/(1.0+OutputList[0].Redshift),1.0);
+  if (ThisTask == 0) {
+    if (((int)(ceil(fabs((Origin_x - Rcomov_max)/Box))) > Nrep_neg_x)) &&
+        ((int)(ceil(fabs((Origin_y - Rcomov_max)/Box))) > Nrep_neg_y)  &&
+        ((int)(ceil(fabs((Origin_z - Rcomov_max)/Box))) > Nrep_neg_z)  &&
+        ((int)(ceil((Rcomov_max + Origin_x)/Box))-1 > Nrep_pos_x) &&
+        ((int)(ceil((Rcomov_max + Origin_y)/Box))-1 > Nrep_pos_y) &&
+        ((int)(ceil((Rcomov_max + Origin_z)/Box))-1 > Nrep_pos_z)) {
+       printf("\nWARNING: Initial comoving radius of the lightcone is outside all replicated boxes. Is this intentional?\n");
+       printf("         If so, reducing the first output redshift will start the lightcone later and prove more efficient\n");
+       printf("         If not then please increase the number of replicates in the input parameters file.\n\n");
+    }
+  } 
   if ((int)(ceil(fabs((Origin_x - Rcomov_max)/Box))) < Nrep_neg_x) Nrep_neg_x = (int)(ceil(fabs((Origin_x - Rcomov_max)/Box)));
   if ((int)(ceil(fabs((Origin_y - Rcomov_max)/Box))) < Nrep_neg_y) Nrep_neg_y = (int)(ceil(fabs((Origin_y - Rcomov_max)/Box)));
   if ((int)(ceil(fabs((Origin_z - Rcomov_max)/Box))) < Nrep_neg_z) Nrep_neg_z = (int)(ceil(fabs((Origin_z - Rcomov_max)/Box)));
@@ -237,7 +249,7 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2, int
   double dyyy_tmp, da1_tmp, da2_tmp, AL;
   double Delta_Pos[3];
   double boundary = 20.0;
-  double fac = Hubble/pow(AF,1.5);
+  double fac = Hubble/AF;                                // This differs from snapshot 'fac' by sqrt(AF) as we don't know after runtime what AF is. 
   double lengthfac = UnitLength_in_cm/3.085678e24;       // Convert positions to Mpc/h
   double velfac    = UnitVelocity_in_cm_per_s/1.0e5;     // Convert velocities to km/s
   double Rcomov_old  = Light/Hubble*SphiStd(A,1.0);

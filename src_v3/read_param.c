@@ -325,9 +325,19 @@ void read_parameterfile(char * fname) {
     FatalError("read_param.c", 325);
   }
 
+  if (NumFilesWrittenInParallel < 1) {
+    if (ThisTask == 0) {
+      printf("\nERROR: `NumFilesWrittenInParallel' is less than 1 so no processors will be writing out the data.\n");
+      printf("        Please set NumFileWrittenInParallel > 0'.\n\n");
+    }
+    FatalError("read_param.c", 333);
+  }
+
   if (NTask < NumFilesWrittenInParallel) {
-    printf("\nWARNING: Number of processors smaller than `NumFilesWrittenInParallel'.\n");
-    printf("         Setting NumFileWrittenInParallel = Number of processors'.\n\n");
+    if (ThisTask == 0) {
+      printf("\nWARNING: Number of processors smaller than `NumFilesWrittenInParallel'.\n");
+      printf("         Setting NumFileWrittenInParallel = Number of processors'.\n\n");
+    }
   }
 
   // Check the run parameters to ensure compatible gaussian/non-gaussian options
@@ -336,7 +346,7 @@ void read_parameterfile(char * fname) {
       printf("\nERROR: You are running with both power spectrum and transfer function.\n");
       printf("       Please select the appropriate one.\n\n");
     }
-    FatalError("read_param.c", 339);
+    FatalError("read_param.c", 349);
   }
 
 #ifdef GAUSSIAN
@@ -345,7 +355,7 @@ void read_parameterfile(char * fname) {
       printf("\nERROR: You are running with neither power spectrum nor transfer function.\n");
       printf("       Please set either WhichSpectrum or WhichTransfer to a non-zero value.\n\n");
     }
-    FatalError("read_param.c", 348);
+    FatalError("read_param.c", 358);
   }
 #else 
   if((WhichSpectrum != 0) || (WhichTransfer == 0)) { 
@@ -353,27 +363,34 @@ void read_parameterfile(char * fname) {
       printf("\nERROR: Non-Gaussian models require the transfer function as input.\n");
       printf("       Switch WhichSpectrum to zero and select a type of transfer function in the input parameter file.\n\n");
     } 
-    FatalError("read_param.c", 356);
+    FatalError("read_param.c", 366);
   }
 #endif
 #ifdef LOCAL_FNL 
    if(PrimordialIndex != 1.0) {
      if (ThisTask == 0) printf("\nERROR: Local non-gaussianity with tilted power spectrum requires the GENERIC_FNL option in the Makefile\n\n");
-    FatalError("read_param.c", 362);
+     FatalError("read_param.c", 372);
    }
 #endif 
 #ifdef ORTHO_FNL 
    if(PrimordialIndex != 1.0) {
      if (ThisTask == 0) printf("\nERROR: Orthogonal non-gaussianity with tilted power spectrum requires the GENERIC_FNL option in the Makefile\n\n"); 
-    FatalError("read_param.c", 368);
+     FatalError("read_param.c", 378);
    }
 #endif 
 #ifdef EQUIL_FNL 
    if(PrimordialIndex != 1.0) {
      if (ThisTask == 0) printf("\nERROR: Equilateral non-gaussianity with tilted power spectrum requires the GENERIC_FNL option in the Makefile\n\n");
-    FatalError("read_param.c", 374);
+     FatalError("read_param.c", 384);
    }
 #endif 
+
+#ifndef GAUSSIAN
+  if (Fnl_Redshift < Init_Redshift) {
+    if (ThisTask == 0) printf("\nERROR: Fnl_Redshift must be >= Initial Redshift for us to generate non-Gaussian initial conditions.\n\n");
+    FatalError("read_param.c",391);
+  }
+#endif
 
   if(errorFlag) {
     MPI_Finalize();

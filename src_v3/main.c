@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
   set_lightcone();
 #endif
   
-  if (UseCOLA == 1){
+  if (UseCOLA){
     subtractLPT = 1; 
     stepDistr   = 0;
     StdDA       = 0;
