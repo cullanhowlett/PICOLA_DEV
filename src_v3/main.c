@@ -52,6 +52,10 @@ int main(int argc, char **argv) {
   // ======================================
   int i, stepDistr;
 
+  if (ThisTask == 0) {
+    printf("\nReading Input Parameters and setting up PICOLA\n");
+    printf("==============================================\n");
+  }
   read_parameterfile(argv[1]);
   read_outputs();
   set_units();
@@ -76,7 +80,7 @@ int main(int argc, char **argv) {
   Scale  = 2.*M_PI/Box;    // The force smoothing scale 
 
   if(ThisTask == 0) {
-    printf("Run Parameters\n");
+    printf("\nRun Parameters\n");
     printf("==============\n");
     printf("Cosmology:\n");
     printf("  Omega Matter(z=0) = %lf\n",Omega);
@@ -265,6 +269,7 @@ int main(int argc, char **argv) {
   // Loop over all the timesteps in the timestep list
   // ================================================
 #ifdef LIGHTCONE
+  writeflag = 1;
   for (i=NoutputStart;i<Noutputs;i++) {
 #else
   for (i=NoutputStart;i<=Noutputs;i++) {
@@ -393,7 +398,7 @@ int main(int argc, char **argv) {
 
 #ifdef LIGHTCONE
       if (i == Noutputs-1) {
-        Drift_Lightcone(A,AFF,AF,Di,Di2,timeStep);
+        Drift_Lightcone(A,AFF,AF,Di,Di2);
       } else {
         Drift(A,AFF,AF,Di,Di2);
       }
@@ -431,6 +436,10 @@ int main(int argc, char **argv) {
     fflush(stdout);
   }
 
+#ifdef LIGHTCONE
+  Output_Info_Lightcone();
+#endif
+
   free_powertable();
   free_transfertable();
 
@@ -444,6 +453,7 @@ int main(int argc, char **argv) {
   free(KernelTable);
 #endif
 #ifdef LIGHTCONE
+  free(Noutput);
   free(repflag);
 #endif
 #ifndef MEMORY_MODE
@@ -707,5 +717,47 @@ void Output(double A, double Dv, double Dv2) {
     MPI_Barrier(MPI_COMM_WORLD);
   }
  
+  Output_Info(A);
+
+  return;
+}
+
+
+// Generate the info file which contains a list of all the output files, the 8 corners of the slices on those files and the number of particles in the slice
+// =========================================================================================================================================================
+void Output_Info(double A) {
+
+  FILE * fp; 
+  char buf[300];
+  int i;
+  double Z = (1.0/A)-1.0;
+
+  int * Local_p_start_table = (int *)malloc(sizeof(int) * NTask);
+  unsigned int * Noutput_table = (unsigned int *)malloc(sizeof(unsigned int) * NTask);
+  MPI_Allgather(&Local_p_start, 1, MPI_INT, Local_p_start_table, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Allgather(&NumPart, 1, MPI_UNSIGNED, Noutput_table, 1, MPI_UNSIGNED, MPI_COMM_WORLD);
+
+  if (ThisTask == 0) {
+    sprintf(buf, "%s/%s_z%dp%03d.info", OutputDir, FileBase, (int)Z, (int)rint((Z-(int)Z)*1000));
+    if(!(fp = fopen(buf, "w"))) {
+      printf("\nERROR: Can't write in file '%s'.\n\n", buf);
+      FatalError("main.c", 736);
+    }
+    fprintf(fp, "#    FILENUM      XMIN         YMIN        ZMIN         XMAX         YMAX         ZMAX         NPART    \n");
+    double y0 = 0.0;
+    double z0 = 0.0;
+    double y1 = Box;
+    double z1 = Box;
+    for (i=0; i<NTask; i++) {
+      double x0 = Local_p_start_table[i]*(Box/(double)Nsample); 
+      double x1 = (Local_p_start_table[i]+Local_np_table[i])*(Box/(double)Nsample);
+      fprintf(fp, "%12d %12.6lf %12.6lf %12.6lf %12.6lf %12.6lf %12.6lf %12u\n", i, x0, y0, z0, x1, y1, z1, Noutput_table[i]);
+    }
+    fclose(fp);
+  }
+
+  free(Noutput_table);
+  free(Local_p_start_table);
+
   return;
 }

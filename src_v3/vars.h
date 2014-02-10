@@ -203,18 +203,20 @@ extern unsigned long long TotNumPart;  // The total number of particles in the s
 extern double Box;                     // The edge length of the simulation
 extern double Buffer;                  // The amount of extra memory of each processor to compensate for moving particles
 #ifdef LIGHTCONE
-extern int * repflag;         // A flag to say whether we need to check inside a given replicate
-extern int Nrep_neg_x;        // The number of replicated boxes in the negative x direction
-extern int Nrep_neg_y;        // The number of replicated boxes in the negative y direction
-extern int Nrep_neg_z;        // The number of replicated boxes in the negative z direction
-extern int Nrep_pos_x;        // The number of replicated boxes in the positive x direction
-extern int Nrep_pos_y;        // The number of replicated boxes in the positive y direction
-extern int Nrep_pos_z;        // The number of replicated boxes in the positive z direction
-extern int Nrep_neg_max[3];   // The maximum number of replicated boxes in the negative directions
-extern int Nrep_pos_max[3];   // The maximum number of replicated boxes in the positive directions
-extern double Origin_x;       // The x-position of the lightcone origin
-extern double Origin_y;       // The y-position of the lightcone origin
-extern double Origin_z;       // The z-position of the lightcone origin
+extern int writeflag;          // A flag to tell the code whether to write a new file or append onto an existing one.
+extern int * repflag;          // A flag to say whether we need to check inside a given replicate
+extern int Nrep_neg_x;         // The number of replicated boxes in the negative x direction
+extern int Nrep_neg_y;         // The number of replicated boxes in the negative y direction
+extern int Nrep_neg_z;         // The number of replicated boxes in the negative z direction
+extern int Nrep_pos_x;         // The number of replicated boxes in the positive x direction
+extern int Nrep_pos_y;         // The number of replicated boxes in the positive y direction
+extern int Nrep_pos_z;         // The number of replicated boxes in the positive z direction
+extern int Nrep_neg_max[3];    // The maximum number of replicated boxes in the negative directions
+extern int Nrep_pos_max[3];    // The maximum number of replicated boxes in the positive directions
+extern unsigned int * Noutput; // The number of particles that we output in each slice (original and replicated)
+extern double Origin_x;        // The x-position of the lightcone origin
+extern double Origin_y;        // The y-position of the lightcone origin
+extern double Origin_z;        // The z-position of the lightcone origin
 #endif
 
 // 2LPT specific

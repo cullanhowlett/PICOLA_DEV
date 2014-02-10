@@ -124,7 +124,7 @@ void initialize_parts(void) {
 
   if(ThisTask == 0) {
     printf("\nParticles\n---------------------\n");
-    for(i = 0; i < NTask; i++) printf("Task = %d: Particles = %d\n", i, Local_np_table[i]*Nsample*Nsample);
+    for(i = 0; i < NTask; i++) printf("Task = %d: Particles = %u\n", i, (unsigned int)Local_np_table[i]*(unsigned int)Nsample*(unsigned int)Nsample);
     printf("\n----------------------\n");
     printf("Total number of particles = %llu\n\n", TotNumPart);
     fflush(stdout);
