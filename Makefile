@@ -23,8 +23,8 @@ OPTIONS += $(MEMORY_MODE)		# and by making the particle data single precision
 #PARTICLE_ID = -DPARTICLE_ID             # Assigns unsigned long long ID's to each particle and outputs them. This adds
 #OPTIONS += $(PARTICLE_ID)               # an extra 8 bytes to the storage required for each particle
 
-#LIGHTCONE = -DLIGHTCONE                 # Builds a lightcone based on the run parameters and only outputs particles
-#OPTIONS += $(LIGHTCONE)                 # at a given timestep if they have entered the lightcone 
+LIGHTCONE = -DLIGHTCONE                 # Builds a lightcone based on the run parameters and only outputs particles
+OPTIONS += $(LIGHTCONE)                 # at a given timestep if they have entered the lightcone 
 
 GAUSSIAN = -DGAUSSIAN                   # Switch this if you want gaussian initial conditions (fnl otherwise)
 OPTIONS += $(GAUSSIAN) 
@@ -48,8 +48,8 @@ OPTIONS += $(GAUSSIAN)
                                          # For local, equilateral and orthogonal models you can use the provided files
                                          # input_kernel_local.txt, input_kernel_equil.txt, input_kernel_orthog.txt 
 
-GADGET_STYLE = -DGADGET_STYLE           # Writes all the output in Gadget's '1' style format, with the corresponding
-OPTIONS += $(GADGET_STYLE)              # header and correct velocity units
+#GADGET_STYLE = -DGADGET_STYLE           # Writes all the output in Gadget's '1' style format, with the corresponding
+#OPTIONS += $(GADGET_STYLE)              # header and correct velocity units
 
 
 # Nothing below here should need changing unless you are adding in/modifying libraries for existing or new machines
@@ -106,9 +106,9 @@ ifdef ORTHO_FNL
 endif
 endif
 
+ifdef PARTICLE_ID
 ifdef LIGHTCONE
-ifdef GADGET_STYLE
-   $(warning WARNING: GADGET_STYLE outputting is not supported for lightcone simulations, will revert to standard ASCII format)
+   $(warning WARNING: LIGHTCONE output does not output particle IDs)
 endif
 endif
 
