@@ -203,7 +203,7 @@ extern unsigned long long TotNumPart;  // The total number of particles in the s
 extern double Box;                     // The edge length of the simulation
 extern double Buffer;                  // The amount of extra memory of each processor to compensate for moving particles
 #ifdef LIGHTCONE
-extern int writeflag;          // A flag to tell the code whether to write a new file or append onto an existing one.
+extern int * writeflag;          // A flag to tell the code whether to write a new file or append onto an existing one.
 extern int * repflag;          // A flag to say whether we need to check inside a given replicate
 extern int Nrep_neg_x;         // The number of replicated boxes in the negative x direction
 extern int Nrep_neg_y;         // The number of replicated boxes in the negative y direction

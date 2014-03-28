@@ -269,7 +269,6 @@ int main(int argc, char **argv) {
   // Loop over all the timesteps in the timestep list
   // ================================================
 #ifdef LIGHTCONE
-  writeflag = 1;
   for (i=NoutputStart;i<Noutputs;i++) {
 #else
   for (i=NoutputStart;i<=Noutputs;i++) {

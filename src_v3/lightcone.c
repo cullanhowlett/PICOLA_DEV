@@ -33,6 +33,7 @@ void set_lightcone(void) {
   // A flag of 0 means we check it, 1 means the box is completely inside the lightcone so no need to check it this step 
   // 2 means the box has completely left the lightcone so no need to ever check it again.
   repflag = (int *)calloc((Nrep_neg_x+Nrep_pos_x+1)*(Nrep_neg_y+Nrep_pos_y+1)*(Nrep_neg_z+Nrep_pos_z+1),sizeof(int));
+  writeflag = (int *)calloc((Nrep_neg_x+Nrep_pos_x+1)*(Nrep_neg_y+Nrep_pos_y+1)*(Nrep_neg_z+Nrep_pos_z+1),sizeof(int));
   Noutput = (unsigned int *)calloc((Nrep_neg_x+Nrep_pos_x+1)*(Nrep_neg_y+Nrep_pos_y+1)*(Nrep_neg_z+Nrep_pos_z+1),sizeof(unsigned int));
   
   Nrep_neg_max[0] = Nrep_neg_x; Nrep_pos_max[0] = Nrep_pos_x;
@@ -84,13 +85,13 @@ void flag_replicates(double Rcomov_old, double Rcomov_new, double boundary) {
           for (jj = 0; jj < 2; jj++) {
             for (kk = 0; kk < 2; kk++) {
 
-              Xvert = (i+((ii*Local_np+Local_p_start)/(double)Nsample))*Box - Origin_x;
-              Yvert = (j+jj)*Box - Origin_y;
-              Zvert = (k+kk)*Box - Origin_z;
+              // Include a buffer region (boundary) to account for the fact that the particle might move beyond the box boundaries, 20Mpc should be enough.
+              Xvert = (i+((ii*Local_np+Local_p_start)/(double)Nsample))*Box - Origin_x + boundary;
+              Yvert = (j+jj)*Box - Origin_y + boundary;
+              Zvert = (k+kk)*Box - Origin_z + boundary;
               Rvert = Xvert*Xvert+Yvert*Yvert+Zvert*Zvert;
                   
-              // Include a buffer region to account for the fact that the particle might move beyond the box boundaries, 20Mpc should be enough.
-              if (Rvert < Rcomov_new2-boundary) repcount_low++;
+              if (Rvert < Rcomov_new2) repcount_low++;
             }
           }
         }
@@ -115,38 +116,38 @@ void flag_replicates(double Rcomov_old, double Rcomov_new, double boundary) {
           double LeftX = i+(Local_p_start/(double)Nsample);
           double RightX = i+((Local_np+Local_p_start)/(double)Nsample);
 
-          // Check the two faces perpendicular to the x-axis (don't forget these are different depending on the task).
+          // Check the two faces perpendicular to the x-axis (don't forget these are different depending on the task). Don't forget to include the boundary region
           if (Origin_x < LeftX*Box) {
-            dist_face_old = Origin_x - LeftX*Box;
+            dist_face_old = Origin_x - LeftX*Box - boundary;
             dist_face_old *= dist_face_old;
-            dist_face_old += nearest_dist(Origin_y, Origin_z, j, k, j+1, k+1);
+            dist_face_old += nearest_dist(Origin_y, Origin_z, j, k, j+1, k+1, boundary);
           } else if (Origin_x > RightX*Box) {
-            dist_face_old = Origin_x - RightX*Box;
+            dist_face_old = Origin_x - RightX*Box - boundary;
             dist_face_old *= dist_face_old;
-            dist_face_old += nearest_dist(Origin_y, Origin_z, j, k, j+1, k+1);
+            dist_face_old += nearest_dist(Origin_y, Origin_z, j, k, j+1, k+1, boundary);
           }
 
           // Check the two faces perpendicular to the y-axis.
           if (Origin_y < j*Box) {
-            dist_face_new = Origin_y - j*Box;
-            dist_face_new *= dist_face_old;
-            dist_face_new += nearest_dist(Origin_x, Origin_z, LeftX, k, RightX, k+1);
+            dist_face_new = Origin_y - j*Box - boundary;
+            dist_face_new *= dist_face_new;
+            dist_face_new += nearest_dist(Origin_x, Origin_z, LeftX, k, RightX, k+1, boundary);
           } else if (Origin_y > (j+1)*Box) {
-            dist_face_new = Origin_y - (j+1)*Box;
-            dist_face_new *= dist_face_old;
-            dist_face_new += nearest_dist(Origin_x, Origin_z, LeftX, k, RightX, k+1);
+            dist_face_new = Origin_y - (j+1)*Box - boundary;
+            dist_face_new *= dist_face_new;
+            dist_face_new += nearest_dist(Origin_x, Origin_z, LeftX, k, RightX, k+1, boundary);
           }
           if (dist_face_old > dist_face_new) dist_face_old = dist_face_new;
 
           // Check the two faces perpendicular to the z-axis.
           if (Origin_z < k*Box) {
-            dist_face_new = Origin_z - k*Box;
-            dist_face_new *= dist_face_old;
-            dist_face_new += nearest_dist(Origin_x, Origin_y, LeftX, j, RightX, j+1);
+            dist_face_new = Origin_z - k*Box - boundary;
+            dist_face_new *= dist_face_new;
+            dist_face_new += nearest_dist(Origin_x, Origin_y, LeftX, j, RightX, j+1, boundary);
           } else if (Origin_z > (k+1)*Box) {
-            dist_face_new = Origin_z - (k+1)*Box;
-            dist_face_new *= dist_face_old;
-            dist_face_new += nearest_dist(Origin_x, Origin_y, LeftX, j, RightX, j+1);
+            dist_face_new = Origin_z - (k+1)*Box - boundary;
+            dist_face_new *= dist_face_new;
+            dist_face_new += nearest_dist(Origin_x, Origin_y, LeftX, j, RightX, j+1, boundary);
           }
           if (dist_face_old > dist_face_new) dist_face_old = dist_face_new;
           
@@ -154,7 +155,7 @@ void flag_replicates(double Rcomov_old, double Rcomov_new, double boundary) {
           // Otherwise dist_face_old now contains the shortest distance from ANY point on the replicate to the lightcone. Hence if this is greater than Rcomov_old2
           // we never have to loop over this replicate again
           if (dist_face_old < 9.9e29) {
-            if (dist_face_old > Rcomov_old2+boundary) repflag[coord] = 2;
+            if (dist_face_old > Rcomov_old2) repflag[coord] = 2;
           }        
         }
       }
@@ -166,7 +167,7 @@ void flag_replicates(double Rcomov_old, double Rcomov_new, double boundary) {
 
 
 // For a given face on a replicate this routine returns the shortest distance between the face, bounded by (ix, iy) and (jx, jy), and the point (px, py)
-double nearest_dist(double px, double py, double ix, double iy, double jx, double jy) {
+double nearest_dist(double px, double py, double ix, double iy, double jx, double jy, double boundary) {
 
   double dist1, dist2;
   double dist_line_old, dist_line_new;
@@ -179,43 +180,43 @@ double nearest_dist(double px, double py, double ix, double iy, double jx, doubl
   // The distance along the line between the 1D projection and the end of the line segment is then dist2. NOTE: for projections that land
   // inside the face, .i.e. within all four line segments, we don't care about dist1 or dist2 as the shortest distance between the point and the
   // replicate is just dist1. Also, we only have to do a maximum of 2 line segments then as this is the most that any point can see.
-  if (px < ix*Box ) {
-    dist2 = 0.0;
-    dist1 = px - ix*Box;
+  if (px < ix*Box) {
+    dist2 = -boundary;
+    dist1 = px - ix*Box - boundary;
     if (py < iy*Box) {
-      dist2 = py - iy*Box; 
+      dist2 += py - iy*Box; 
     } else if (py > jy*Box) {
-      dist2 = py - jy*Box;
+      dist2 += py - jy*Box;
     }          
     dist_line_old = dist1*dist1+dist2*dist2;
   } else if (px > jx*Box) {
-    dist2 = 0.0;
-    dist1 = px - jx*Box;
+    dist2 = -boundary;
+    dist1 = px - jx*Box - boundary;
     if (py < iy*Box) {
-      dist2 = py - iy*Box; 
+      dist2 += py - iy*Box; 
     } else if (py > jy*Box) {
-      dist2 = py - jy*Box;
+      dist2 += py - jy*Box;
     }          
     dist_line_old = dist1*dist1+dist2*dist2;
   }
  
   // The third and fourth line segments
   if (py < iy*Box) {
-    dist2 = 0.0;
-    dist1 = py - iy*Box;
+    dist2 = -boundary;
+    dist1 = py - iy*Box - boundary;
     if (px < ix*Box) {
-      dist2 = px - ix*Box; 
+      dist2 += px - ix*Box; 
     } else if (px > jx*Box) {
-      dist2 = px - jx*Box;
+      dist2 += px - jx*Box;
     }        
     dist_line_new = dist1*dist1+dist2*dist2;
   } else if (py > jy*Box) {
-    dist2 = 0.0;
-    dist1 = py - jy*Box;
+    dist2 = -boundary;
+    dist1 = py - jy*Box - boundary;
     if (px < ix*Box) {
-      dist2 = px - ix*Box; 
+      dist2 += px - ix*Box; 
     } else if (px > jx*Box) {
-      dist2 = px - jx*Box;
+      dist2 += px - jx*Box;
     }        
     dist_line_new = dist1*dist1+dist2*dist2;
   }
@@ -245,9 +246,9 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
 
   size_t bytes;
   int NTAB = 1000;                                       // The length of the particle exit time lookup tables (we spline anyway so not really important)
-  int i, j, k, coord, flag, repcount, repcountmax;
-  unsigned int n, pc, blockmaxlen;
-  unsigned int outputflag, NumPartMax, NumPartMin;
+  int i, j, k, coord, flag, repcount;
+  unsigned int n, * pc, blockmaxlen, blockmaxlenglob;
+  unsigned int outputflag, NumPartMax;
   float * block;
   double dyyy, da1, da2, dv1, dv2;
   double dyyy_tmp, da1_tmp, da2_tmp, AL;
@@ -329,20 +330,23 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
 
   // Calculate the global maximum number of particles on a task and the global minimum number of particles we can store.
   // Then allocate memory to store the particles that we are outputting. We may have some spare memory from 
-  // deallocating the force grids on top of that from deallocating the displacement arrays. If repcountmax == 0 then
+  // deallocating the force grids on top of that from deallocating the displacement arrays. If repcount == 0 then
   // no replicates are inside the lightcone. This can happen if we have an initial lightcone redshift beyond
   // the maximum extent of the replicates
   ierr = MPI_Allreduce(&NumPart, &NumPartMax, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
-  ierr = MPI_Allreduce(&NumPart, &NumPartMin, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
 #ifdef MEMORY_MODE
-  block = (float *)malloc(bytes = 6*Total_size*sizeof(float_kind)+3*NumPartMin*sizeof(float));
+  block = (float *)malloc(bytes = 6*Total_size*sizeof(float_kind)+3*NumPart*sizeof(float));
 #else
-  block = (float *)malloc(bytes = 3*NumPartMin*sizeof(float_kind));
+  block = (float *)malloc(bytes = 3*NumPart*sizeof(float_kind));
 #endif
 
-  // Loop over all replicates and calculate the global maximum repcount.
+  // Create an array containing the replicates we actually need to loop over. The order of this array will also denote
+  // The order in which we store the output and the number of particles needed to output. To output the replicates to different files
+  // we can just make sure we store particles from the same replicate consecutively as we already assume that we have to output all replicated
+  // particles (and hence have enough space).
   // How many particles can we store assuming all tasks replicate the particles by the maximum amount?
   repcount = 0;
+  pc = (unsigned int *)calloc((Nrep_neg_x+Nrep_pos_x+1)*(Nrep_neg_y+Nrep_pos_y+1)*(Nrep_neg_z+Nrep_pos_z+1),sizeof(unsigned int));
   for (i = -Nrep_neg_x; i<=Nrep_pos_x; i++) {
     for (j = -Nrep_neg_y; j<=Nrep_pos_y; j++) {
       for (k = -Nrep_neg_z; k<=Nrep_pos_z; k++) {
@@ -351,15 +355,14 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
       }
     }
   }
-  ierr = MPI_Allreduce(&repcount, &repcountmax, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-  if (repcountmax == 0) {
+  if (repcount == 0) {
     blockmaxlen = NumPartMax;
   } else {
-    blockmaxlen = (unsigned int)(bytes / (6 * sizeof(float) * repcountmax));
+    blockmaxlen = (unsigned int)(bytes / (6 * sizeof(float) * repcount));
   }
+  ierr = MPI_Allreduce(&blockmaxlen, &blockmaxlenglob, 1, MPI_UNSIGNED, MPI_MIN, MPI_COMM_WORLD);
 
   // Loop over all particles, modifying the position based on the current replicate
-  pc = 0;
   outputflag = 0;
   for(n=0; n<NumPartMax; n++) {
 
@@ -370,14 +373,15 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
       Delta_Pos[1] = (P[n].Vel[1]-sumy)*dyyy+subtractLPT*(P[n].Dz[1]*da1+P[n].D2[1]*da2);   
       Delta_Pos[2] = (P[n].Vel[2]-sumz)*dyyy+subtractLPT*(P[n].Dz[2]*da1+P[n].D2[2]*da2);     
 
-      // Check that 20Mpc/h boundaries is enough
-      if (Delta_Pos[0]*Delta_Pos[0]+Delta_Pos[1]*Delta_Pos[1]+Delta_Pos[2]*Delta_Pos[2] > boundary) {
+      // Check that 100Mpc^2/h^2 boundaries is enough
+      if((Delta_Pos[0] > boundary) || (Delta_Pos[1] > boundary) || (Delta_Pos[2] > boundary)) {
         printf("\nERROR: Particle displacement greater than boundary for lightcone replicate estimate.\n");
         printf("       increase boundary condition in lightcone.c (line 56)\n\n");
       FatalError("lightcone.c", 212);
       }
 
       // Loop over all replicates
+      repcount=0;
       for (i = -Nrep_neg_x; i<=Nrep_pos_x; i++) {
         for (j = -Nrep_neg_y; j<=Nrep_pos_y; j++) {
           for (k = -Nrep_neg_z; k<=Nrep_pos_z; k++) {
@@ -413,16 +417,18 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
                   dyyy_tmp = gsl_spline_eval(dyyy_spline, AL, dyyy_acc);
               
                   // Store the interpolated particle position and velocity.
-                  block[6 * pc]     = (float)(lengthfac*(P[n].Pos[0] + (P[n].Vel[0]-sumx)*dyyy_tmp+subtractLPT*(P[n].Dz[0]*da1_tmp+P[n].D2[0]*da2_tmp) + (i*Box)));
-                  block[6 * pc + 1] = (float)(lengthfac*(P[n].Pos[1] + (P[n].Vel[1]-sumy)*dyyy_tmp+subtractLPT*(P[n].Dz[1]*da1_tmp+P[n].D2[1]*da2_tmp) + (j*Box)));
-                  block[6 * pc + 2] = (float)(lengthfac*(P[n].Pos[2] + (P[n].Vel[2]-sumz)*dyyy_tmp+subtractLPT*(P[n].Dz[2]*da1_tmp+P[n].D2[2]*da2_tmp) + (k*Box)));
-                  block[6 * pc + 3] = (float)(velfac*fac*(P[n].Vel[0]-sumx+(P[n].Dz[0]*dv1+P[n].D2[0]*dv2)*subtractLPT));
-                  block[6 * pc + 4] = (float)(velfac*fac*(P[n].Vel[1]-sumy+(P[n].Dz[1]*dv1+P[n].D2[1]*dv2)*subtractLPT));
-                  block[6 * pc + 5] = (float)(velfac*fac*(P[n].Vel[2]-sumz+(P[n].Dz[2]*dv1+P[n].D2[2]*dv2)*subtractLPT));
-                  pc++;   
+                  unsigned int ind = 6*(blockmaxlen*repcount+pc[repcount]);
+                  block[ind]     = (float)(lengthfac*(P[n].Pos[0] + (P[n].Vel[0]-sumx)*dyyy_tmp+subtractLPT*(P[n].Dz[0]*da1_tmp+P[n].D2[0]*da2_tmp) + (i*Box)));
+                  block[ind + 1] = (float)(lengthfac*(P[n].Pos[1] + (P[n].Vel[1]-sumy)*dyyy_tmp+subtractLPT*(P[n].Dz[1]*da1_tmp+P[n].D2[1]*da2_tmp) + (j*Box)));
+                  block[ind + 2] = (float)(lengthfac*(P[n].Pos[2] + (P[n].Vel[2]-sumz)*dyyy_tmp+subtractLPT*(P[n].Dz[2]*da1_tmp+P[n].D2[2]*da2_tmp) + (k*Box)));
+                  block[ind + 3] = (float)(velfac*fac*(P[n].Vel[0]-sumx+(P[n].Dz[0]*dv1+P[n].D2[0]*dv2)*subtractLPT));
+                  block[ind + 4] = (float)(velfac*fac*(P[n].Vel[1]-sumy+(P[n].Dz[1]*dv1+P[n].D2[1]*dv2)*subtractLPT));
+                  block[ind + 5] = (float)(velfac*fac*(P[n].Vel[2]-sumz+(P[n].Dz[2]*dv1+P[n].D2[2]*dv2)*subtractLPT));
+                  pc[repcount]++;   
                   Noutput[coord]++;
                 }
               }
+              repcount++;
             }
           }
         }
@@ -434,15 +440,16 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
       P[n].Pos[2] = periodic_wrap(P[n].Pos[2]+Delta_Pos[2]); 
     }
     
-    if (outputflag == blockmaxlen) {
-      Output_Lightcone(pc, block);
-      pc = 0;
+    if (outputflag == blockmaxlenglob) {
+      Output_Lightcone(pc, blockmaxlen, block);
       outputflag = 0;
+      for (i=0; i<(Nrep_neg_x+Nrep_pos_x+1)*(Nrep_neg_y+Nrep_pos_y+1)*(Nrep_neg_z+Nrep_pos_z+1); i++) pc[i] = 0;
     }
    
   }
 
-  if (outputflag > 0) Output_Lightcone(pc, block);
+  if (outputflag > 0) Output_Lightcone(pc, blockmaxlen, block);
+  free(pc);
   free(block);
  
   gsl_spline_free(da1_spline);
@@ -457,11 +464,13 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
 
 // Output the lightcone data
 // =========================
-void Output_Lightcone(unsigned int pc, float * block) {
+void Output_Lightcone(unsigned int * pc, unsigned int blockmaxlen, float * block) {
 
   FILE * fp; 
   char buf[300];
-  int nprocgroup, groupTask, masterTask;
+  int i, j, k;
+  int nprocgroup, groupTask, masterTask, repcount;
+  unsigned int chunk, coord;
 #ifdef GADGET_STYLE
   int dummy1, dummy2;
 #else
@@ -473,37 +482,57 @@ void Output_Lightcone(unsigned int pc, float * block) {
   masterTask = (ThisTask / nprocgroup) * nprocgroup;
   for(groupTask = 0; groupTask < nprocgroup; groupTask++) {
     if (ThisTask == (masterTask + groupTask)) {
-      if(pc > 0) {
-        sprintf(buf, "%s/%s_lightcone.%d", OutputDir, FileBase, ThisTask);
-        if (writeflag) {
-          // Overwrite any pre-existing output files otherwise we'll append onto the end of them.
-          if(!(fp = fopen(buf, "w"))) {
-            printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-            FatalError("lightcone.c", 93);
-          }
-          writeflag = 0;
-        } else {
-          if(!(fp = fopen(buf, "a"))) {
-            printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-            FatalError("lightcone.c", 98);
+
+      // Loop over all replicates
+      repcount=0;
+      for (i = -Nrep_neg_x; i<=Nrep_pos_x; i++) {
+        for (j = -Nrep_neg_y; j<=Nrep_pos_y; j++) {
+          for (k = -Nrep_neg_z; k<=Nrep_pos_z; k++) {
+
+            coord = ((i+Nrep_neg_max[0])*(Nrep_neg_max[1]+Nrep_pos_max[1]+1)+(j+Nrep_neg_max[1]))*(Nrep_neg_max[2]+Nrep_pos_max[2]+1)+(k+Nrep_neg_max[2]);
+            if (repflag[coord] == 0) {
+
+              if(pc[repcount] > 0) {
+                sprintf(buf, "%s/%s_lightcone.%d", OutputDir, FileBase, coord*NTask+ThisTask);
+                if (writeflag[coord] == 0) {
+                  // Overwrite any pre-existing output files otherwise we'll append onto the end of them.
+                  if(!(fp = fopen(buf, "w"))) {
+                    printf("\nERROR: Can't write in file '%s'.\n\n", buf);
+                    FatalError("lightcone.c", 93);
+                  }
+                  writeflag[coord] = 1;
+                } else {
+                  if(!(fp = fopen(buf, "a"))) {
+                    printf("\nERROR: Can't write in file '%s'.\n\n", buf);
+                    FatalError("lightcone.c", 98);
+                  }
+                }
+
+#ifdef GADGET_STYLE
+                // write coordinates and velocities in unformatted binary
+                chunk = blockmaxlen*repcount;
+                dummy1 = sizeof(pc[repcount]); 
+                dummy2 = sizeof(float) * 6 * pc[repcount];
+                my_fwrite(&dummy1, sizeof(dummy1), 1, fp);
+                my_fwrite(&(pc[repcount]), sizeof(unsigned int), 1, fp);
+                my_fwrite(&dummy1, sizeof(dummy1), 1, fp);
+                my_fwrite(&dummy2, sizeof(dummy2), 1, fp);
+                my_fwrite(&(block[chunk]), sizeof(float), 6 * pc[repcount], fp);
+                my_fwrite(&dummy2, sizeof(dummy2), 1, fp);
+#else
+                // write coordinates and velocities in ASCII
+                for(n=0; n<pc[repcount]; n++) {
+                  chunk = 6*(blockmaxlen*repcount+n);
+                  fprintf(fp,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",block[chunk],block[chunk+1],block[chunk+2],block[chunk+3],block[chunk+4],block[chunk+5]);
+                }
+#endif
+                fclose(fp);
+              }
+              repcount++;
+            }
           }
         }
-#ifdef GADGET_STYLE
-        // write coordinates and velocities in unformatted binary
-        dummy1 = sizeof(pc); 
-        dummy2 = sizeof(float) * 6 * pc;
-        my_fwrite(&dummy1, sizeof(dummy1), 1, fp);
-        my_fwrite(&pc, sizeof(pc), 1, fp);
-        my_fwrite(&dummy1, sizeof(dummy1), 1, fp);
-        my_fwrite(&dummy2, sizeof(dummy2), 1, fp);
-        my_fwrite(block, sizeof(float), 6 * pc, fp);
-        my_fwrite(&dummy2, sizeof(dummy2), 1, fp);
-#else
-        // write coordinates and velocities in ASCII
-        for(n=0; n<pc; n++) fprintf(fp,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",block[6*n],block[6*n+1],block[6*n+2],block[6*n+3],block[6*n+4],block[6*n+5]);
-#endif
-        fclose(fp);
-      }
+      } 
     }
     ierr = MPI_Barrier(MPI_COMM_WORLD);
   }
@@ -548,7 +577,7 @@ void Output_Info_Lightcone(void) {
           for (m=0; m<NTask; m++) {
             double x0 = (i+(Local_p_start_table[m]/(double)Nsample))*Box; 
             double x1 = (i+((Local_np_table[m]+Local_p_start_table[m])/(double)Nsample))*Box; 
-            fprintf(fp, "%12d %12.6lf %12.6lf %12.6lf %12.6lf %12.6lf %12.6lf %12u\n", m, x0, y0, z0, x1, y1, z1, Noutput_table[m]);
+            fprintf(fp, "%12d %12.6lf %12.6lf %12.6lf %12.6lf %12.6lf %12.6lf %12u\n", coord*NTask+m, x0, y0, z0, x1, y1, z1, Noutput_table[m]);
           }
         }
         free(Noutput_table);
