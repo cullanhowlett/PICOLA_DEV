@@ -510,7 +510,7 @@ void Output_Lightcone(unsigned int * pc, unsigned int blockmaxlen, float * block
 
 #ifdef GADGET_STYLE
                 // write coordinates and velocities in unformatted binary
-                chunk = blockmaxlen*repcount;
+                chunk = 6*blockmaxlen*repcount;
                 dummy1 = sizeof(pc[repcount]); 
                 dummy2 = sizeof(float) * 6 * pc[repcount];
                 my_fwrite(&dummy1, sizeof(dummy1), 1, fp);
