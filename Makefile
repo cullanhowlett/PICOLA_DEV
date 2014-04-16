@@ -4,8 +4,8 @@ EXEC    = PICOLA
 
 # Choose the machine you are running on. Currently versions for SCIAMA and DARWIN are implemented
 # ===============================================================================================
-MACHINE = SCIAMA
-#MACHINE = DARWIN
+#MACHINE = SCIAMA
+MACHINE = DARWIN
 
 # Options for optimization
 # ========================
@@ -48,8 +48,10 @@ OPTIONS += $(GAUSSIAN)
                                          # For local, equilateral and orthogonal models you can use the provided files
                                          # input_kernel_local.txt, input_kernel_equil.txt, input_kernel_orthog.txt 
 
-#GADGET_STYLE = -DGADGET_STYLE           # Writes all the output in Gadget's '1' style format, with the corresponding
-#OPTIONS += $(GADGET_STYLE)              # header and correct velocity units
+GADGET_STYLE = -DGADGET_STYLE           # If we are running snapshots this writes all the output in Gadget's '1' style format, with the corresponding header
+OPTIONS += $(GADGET_STYLE)              # If we are running lightcones this simply outputs chunks of particles in binary, with each 'line' containing an 
+                                        # individual particle. The particle chunks are preceded by a value equal to the number of particles in the following chunk. 
+                                        # For lightcones there is NO Gadget-style header.
 
 
 # Nothing below here should need changing unless you are adding in/modifying libraries for existing or new machines
@@ -109,6 +111,12 @@ endif
 ifdef PARTICLE_ID
 ifdef LIGHTCONE
    $(warning WARNING: LIGHTCONE output does not output particle IDs)
+endif
+endif
+
+ifdef GADGET_STYLE
+ifdef LIGHTCONE
+   $(warning WARNING: LIGHTCONE with GADGET_STYLE output does not actually output in a way that GADGET can read. Please see the User Guide.)
 endif
 endif
 
