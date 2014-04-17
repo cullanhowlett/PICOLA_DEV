@@ -471,7 +471,7 @@ void Output_Lightcone(unsigned int * pc, unsigned int blockmaxlen, float * block
   int i, j, k;
   int nprocgroup, groupTask, masterTask, repcount;
   unsigned int chunk, coord;
-#ifdef GADGET_STYLE
+#ifdef UNFORMATTED
   int dummy1, dummy2;
 #else
   unsigned int n;
@@ -508,7 +508,7 @@ void Output_Lightcone(unsigned int * pc, unsigned int blockmaxlen, float * block
                   }
                 }
 
-#ifdef GADGET_STYLE
+#ifdef UNFORMATTED
                 // write coordinates and velocities in unformatted binary
                 chunk = 6*blockmaxlen*repcount;
                 dummy1 = sizeof(pc[repcount]); 

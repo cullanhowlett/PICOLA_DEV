@@ -49,9 +49,11 @@ OPTIONS += $(GAUSSIAN)
                                          # input_kernel_local.txt, input_kernel_equil.txt, input_kernel_orthog.txt 
 
 GADGET_STYLE = -DGADGET_STYLE           # If we are running snapshots this writes all the output in Gadget's '1' style format, with the corresponding header
-OPTIONS += $(GADGET_STYLE)              # If we are running lightcones this simply outputs chunks of particles in binary, with each 'line' containing an 
-                                        # individual particle. The particle chunks are preceded by a value equal to the number of particles in the following chunk. 
-                                        # For lightcones there is NO Gadget-style header.
+OPTIONS += $(GADGET_STYLE)              # This option is incompatible with LIGHTCONE simulations. For binary outputs with LIGHTCONE simulations use the UNFORMATTED option.
+																				
+UNFORMATTED = -DUNFORMATTED             # If we are running lightcones this writes all the output in binary. All the particles are output in chunks with each 
+OPTIONS += $(UNFORMATTED)               # chunk preceded by the number of particles in the chunk. With the chunks we output all the data (id, position and velocity)
+                                        # for a given particle contiguously
 
 
 # Nothing below here should need changing unless you are adding in/modifying libraries for existing or new machines
@@ -116,7 +118,13 @@ endif
 
 ifdef GADGET_STYLE
 ifdef LIGHTCONE
-   $(warning WARNING: LIGHTCONE with GADGET_STYLE output does not actually output in a way that GADGET can read. Please see the User Guide.)
+   $(error ERROR: LIGHTCONE AND GADGET_STYLE are not compatible, for binary output with LIGHTCONE simulations please choose the UNFORMATTED option.)
+endif
+endif
+
+ifdef UNFORMATTED
+ifndef LIGHTCONE 
+   $(error ERROR: UNFORMATTED option is incompatible with snapshot simulations, for binary output with snapshot simulations please choose the GADGET_STYLE option.)
 endif
 endif
 
