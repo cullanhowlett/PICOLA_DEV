@@ -82,9 +82,9 @@ void read_kernel_table(void);
 #ifdef LIGHTCONE
 void set_lightcone(void);
 void Output_Info_Lightcone(void);
-void Output_Lightcone(unsigned int * pc, unsigned int blockmaxlen, float * block);
 void flag_replicates(double Rcomov_old, double Rcomov_new, double boundary);
 void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2);
+void Output_Lightcone(unsigned int pc, float * block, int coord);
 double nearest_dist(double px, double py, double ix, double iy, double jx, double jy, double boundary);
 #endif
 

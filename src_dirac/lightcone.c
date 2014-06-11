@@ -246,13 +246,14 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
 
   size_t bytes;
   int NTAB = 1000;                                       // The length of the particle exit time lookup tables (we spline anyway so not really important)
-  int i, j, k, coord, flag, repcount;
-  unsigned int n, * pc, blockmaxlen, blockmaxlenglob;
-  unsigned int outputflag, NumPartMax;
+  int i, j, k, coord, flag;
+  int moreoutperrep, outputflag; 
+  unsigned int n, pc, blockmaxlen, blockmaxlenmin;
+  unsigned int outputcounter, NumPartMax;
   float * block;
+  float * Delta_X, * Delta_Y, * Delta_Z;
   double dyyy, da1, da2, dv1, dv2;
   double dyyy_tmp, da1_tmp, da2_tmp, AL;
-  double Delta_Pos[3];
   double boundary = 20.0;
   double fac = Hubble/AF;                                // This differs from snapshot 'fac' by sqrt(AF) as we don't know after runtime what AF is. 
   double lengthfac = UnitLength_in_cm/3.085678e24;       // Convert positions to Mpc/h
@@ -320,74 +321,65 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
   free(da2_tab);
   free(dyyy_tab);
 
-  // For the outputting we can only moderate how many tasks output at once if they all enter the output stage at the same time.
-  // As such we output at set times rather than when actually necessary. This also alleviates the need for
-  // any inter-task communications, which would be necessary if we were to only output once a task has filled
-  // it's quota. Unfortunately, as the number of particles on each task will be different we have to make 
-  // each task loop over the maximum number of particles on any task, but most tasks will not have to actually do anything.
-  // This will result in more outputs than is truly necessary. We also must assume that all looped over replicates of a 
-  // given particle are to be outputted even if they are not.
-
-  // Calculate the global maximum number of particles on a task and the global minimum number of particles we can store.
-  // Then allocate memory to store the particles that we are outputting. We may have some spare memory from 
+  // Allocate memory to store the particles that we are outputting. We may have some spare memory from 
   // deallocating the force grids on top of that from deallocating the displacement arrays. If repcount == 0 then
   // no replicates are inside the lightcone. This can happen if we have an initial lightcone redshift beyond
   // the maximum extent of the replicates
-  ierr = MPI_Allreduce(&NumPart, &NumPartMax, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
 #ifdef MEMORY_MODE
-  block = (float *)malloc(bytes = 6*Total_size*sizeof(float_kind)+3*NumPart*sizeof(float));
+  block = (float *)malloc(bytes = 6*Total_size*sizeof(float_kind));
 #else
-  block = (float *)malloc(bytes = 3*NumPart*sizeof(float_kind));
+  block = (float *)malloc(bytes = 3*NumPart*sizeof(float));
 #endif
-
-  // Create an array containing the replicates we actually need to loop over. The order of this array will also denote
-  // The order in which we store the output and the number of particles needed to output. To output the replicates to different files
-  // we can just make sure we store particles from the same replicate consecutively as we already assume that we have to output all replicated
-  // particles (and hence have enough space).
-  // How many particles can we store assuming all tasks replicate the particles by the maximum amount?
-  repcount = 0;
-  pc = (unsigned int *)calloc((Nrep_neg_x+Nrep_pos_x+1)*(Nrep_neg_y+Nrep_pos_y+1)*(Nrep_neg_z+Nrep_pos_z+1),sizeof(unsigned int));
+  
+  // What is the maximum number of particles we can store (only need to make this per replicate now :) ) 
+  blockmaxlen = (unsigned int)(bytes / (6 * sizeof(float)));
+  
+  // In the event that blockmaxlen is not large enough to hold all the particles in a replicate we have to
+  // make each task loop over the same number of particles so that it can enter the output at the same time.
+  // On top of this we need the tasks to know when to output (i.e., when block is full on one of the tasks).
+  // We could do this by doing an MPI operation each iteration (which sounds very slow), or set up outputting checkpoints.
+  // The only way to create a checkpoint I can think of is too assume every particle is put into block and use a counter
+  // up to some global defined blockmaxlen.
+  moreoutperrep = 0;
+  if (blockmaxlen < NumPart) moreoutperrep = 1;
+  MPI_Allreduce(MPI_IN_PLACE, &moreoutperrep, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&NumPart, &NumPartMax, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allreduce(&blockmaxlen, &blockmaxlenmin, 1, MPI_UNSIGNED, MPI_MIN, MPI_COMM_WORLD);
+    
+  // Compute and store the particle displacements
+  Delta_X = (float *)malloc(NumPart*sizeof(float));
+  Delta_Y = (float *)malloc(NumPart*sizeof(float));                            
+  Delta_Z = (float *)malloc(NumPart*sizeof(float));
+  for (n=0; n<NumPart; n++) {
+    Delta_X[n] = (P[n].Vel[0]-sumx)*dyyy+subtractLPT*(P[n].Dz[0]*da1+P[n].D2[0]*da2);
+    Delta_Y[n] = (P[n].Vel[1]-sumy)*dyyy+subtractLPT*(P[n].Dz[1]*da1+P[n].D2[1]*da2);   
+    Delta_Z[n] = (P[n].Vel[2]-sumz)*dyyy+subtractLPT*(P[n].Dz[2]*da1+P[n].D2[2]*da2);     
+    
+    // Check that 20Mpc/h boundaries is enough
+    if((Delta_X[n] > boundary) || (Delta_Y[n] > boundary) || (Delta_Z[n] > boundary)) {
+      printf("\nERROR: Particle displacement greater than boundary for lightcone replicate estimate.\n");
+      printf("       increase boundary condition in lightcone.c (line 56)\n\n");
+      FatalError("lightcone.c", 212);
+    }
+  }
+                                                           
+  // Loop over all the replicates
   for (i = -Nrep_neg_x; i<=Nrep_pos_x; i++) {
     for (j = -Nrep_neg_y; j<=Nrep_pos_y; j++) {
       for (k = -Nrep_neg_z; k<=Nrep_pos_z; k++) {
-        coord = ((i+Nrep_neg_max[0])*(Nrep_neg_max[1]+Nrep_pos_max[1]+1)+(j+Nrep_neg_max[1]))*(Nrep_neg_max[2]+Nrep_pos_max[2]+1)+(k+Nrep_neg_max[2]);
-        if (repflag[coord] == 0) repcount++;
-      }
-    }
-  }
-  if (repcount == 0) {
-    blockmaxlen = NumPartMax;
-  } else {
-    blockmaxlen = (unsigned int)(bytes / (6 * sizeof(float) * repcount));
-  }
-  ierr = MPI_Allreduce(&blockmaxlen, &blockmaxlenglob, 1, MPI_UNSIGNED, MPI_MIN, MPI_COMM_WORLD);
-
-  // Loop over all particles, modifying the position based on the current replicate
-  outputflag = 0;
-  for(n=0; n<NumPartMax; n++) {
-
-    outputflag++;
-    if (n < NumPart) {
-
-      Delta_Pos[0] = (P[n].Vel[0]-sumx)*dyyy+subtractLPT*(P[n].Dz[0]*da1+P[n].D2[0]*da2);
-      Delta_Pos[1] = (P[n].Vel[1]-sumy)*dyyy+subtractLPT*(P[n].Dz[1]*da1+P[n].D2[1]*da2);   
-      Delta_Pos[2] = (P[n].Vel[2]-sumz)*dyyy+subtractLPT*(P[n].Dz[2]*da1+P[n].D2[2]*da2);     
-
-      // Check that 100Mpc^2/h^2 boundaries is enough
-      if((Delta_Pos[0] > boundary) || (Delta_Pos[1] > boundary) || (Delta_Pos[2] > boundary)) {
-        printf("\nERROR: Particle displacement greater than boundary for lightcone replicate estimate.\n");
-        printf("       increase boundary condition in lightcone.c (line 56)\n\n");
-      FatalError("lightcone.c", 212);
-      }
-
-      // Loop over all replicates
-      repcount=0;
-      for (i = -Nrep_neg_x; i<=Nrep_pos_x; i++) {
-        for (j = -Nrep_neg_y; j<=Nrep_pos_y; j++) {
-          for (k = -Nrep_neg_z; k<=Nrep_pos_z; k++) {
-
-            coord = ((i+Nrep_neg_max[0])*(Nrep_neg_max[1]+Nrep_pos_max[1]+1)+(j+Nrep_neg_max[1]))*(Nrep_neg_max[2]+Nrep_pos_max[2]+1)+(k+Nrep_neg_max[2]);
-            if (repflag[coord] == 0) {
+  
+        // Can we assume we only need one output per replicate?
+        if (!(moreoutperrep)) {
+        
+          // Is this replicate neither fully inside or fully outside the lightcone?
+          // repflag is not the same on all tasks, so we can never be sure that we can skip output for all processors
+          pc = 0;
+          outputflag = 0;
+          coord = ((i+Nrep_neg_max[0])*(Nrep_neg_max[1]+Nrep_pos_max[1]+1)+(j+Nrep_neg_max[1]))*(Nrep_neg_max[2]+Nrep_pos_max[2]+1)+(k+Nrep_neg_max[2]);
+          if (repflag[coord] == 0) {
+  
+            // Loop over all particles, modifying the position based on the current replicate
+            for(n=0; n<NumPart; n++) {
 
               // Did the particle start the timestep inside the lightcone?
               flag = 0;
@@ -400,9 +392,9 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
 
               // Have any particles that started inside the lightcone now exited?
               if (flag) {
-                Xpart += Delta_Pos[0];
-                Ypart += Delta_Pos[1];
-                Zpart += Delta_Pos[2];
+                Xpart += Delta_X[n];
+                Ypart += Delta_Y[n];
+                Zpart += Delta_Z[n];
                 Rpart_new2 = Xpart*Xpart+Ypart*Ypart+Zpart*Zpart;
 
                 if (Rpart_new2 > Rcomov_new2) {
@@ -417,41 +409,105 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
                   dyyy_tmp = gsl_spline_eval(dyyy_spline, AL, dyyy_acc);
               
                   // Store the interpolated particle position and velocity.
-                  unsigned int ind = 6*(blockmaxlen*repcount+pc[repcount]);
-                  block[ind]     = (float)(lengthfac*(P[n].Pos[0] + (P[n].Vel[0]-sumx)*dyyy_tmp+subtractLPT*(P[n].Dz[0]*da1_tmp+P[n].D2[0]*da2_tmp) + (i*Box)));
-                  block[ind + 1] = (float)(lengthfac*(P[n].Pos[1] + (P[n].Vel[1]-sumy)*dyyy_tmp+subtractLPT*(P[n].Dz[1]*da1_tmp+P[n].D2[1]*da2_tmp) + (j*Box)));
-                  block[ind + 2] = (float)(lengthfac*(P[n].Pos[2] + (P[n].Vel[2]-sumz)*dyyy_tmp+subtractLPT*(P[n].Dz[2]*da1_tmp+P[n].D2[2]*da2_tmp) + (k*Box)));
-                  block[ind + 3] = (float)(velfac*fac*(P[n].Vel[0]-sumx+(P[n].Dz[0]*dv1+P[n].D2[0]*dv2)*subtractLPT));
-                  block[ind + 4] = (float)(velfac*fac*(P[n].Vel[1]-sumy+(P[n].Dz[1]*dv1+P[n].D2[1]*dv2)*subtractLPT));
-                  block[ind + 5] = (float)(velfac*fac*(P[n].Vel[2]-sumz+(P[n].Dz[2]*dv1+P[n].D2[2]*dv2)*subtractLPT));
-                  pc[repcount]++;   
-                  Noutput[coord]++;
+                  block[6*pc]     = (float)(lengthfac*(P[n].Pos[0] + (P[n].Vel[0]-sumx)*dyyy_tmp+subtractLPT*(P[n].Dz[0]*da1_tmp+P[n].D2[0]*da2_tmp) + (i*Box)));
+                  block[6*pc + 1] = (float)(lengthfac*(P[n].Pos[1] + (P[n].Vel[1]-sumy)*dyyy_tmp+subtractLPT*(P[n].Dz[1]*da1_tmp+P[n].D2[1]*da2_tmp) + (j*Box)));
+                  block[6*pc + 2] = (float)(lengthfac*(P[n].Pos[2] + (P[n].Vel[2]-sumz)*dyyy_tmp+subtractLPT*(P[n].Dz[2]*da1_tmp+P[n].D2[2]*da2_tmp) + (k*Box)));
+                  block[6*pc + 3] = (float)(velfac*fac*(P[n].Vel[0]-sumx+(P[n].Dz[0]*dv1+P[n].D2[0]*dv2)*subtractLPT));
+                  block[6*pc + 4] = (float)(velfac*fac*(P[n].Vel[1]-sumy+(P[n].Dz[1]*dv1+P[n].D2[1]*dv2)*subtractLPT));
+                  block[6*pc + 5] = (float)(velfac*fac*(P[n].Vel[2]-sumz+(P[n].Dz[2]*dv1+P[n].D2[2]*dv2)*subtractLPT));
+                  pc++;
                 }
               }
-              repcount++;
             }
+          }
+          // Do we need to output?
+          if (pc > 0) outputflag = 1;
+          MPI_Allreduce(MPI_IN_PLACE, &outputflag, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+          if (outputflag > 0) Output_Lightcone(pc, block, coord);
+          
+        } else {
+          
+          // Is this replicate neither fully inside or fully outside the lightcone?
+          // repflag is not the same on all tasks, so we can never be sure that we can skip output for all processors
+          pc = 0;
+          outputflag = 0;
+          coord = ((i+Nrep_neg_max[0])*(Nrep_neg_max[1]+Nrep_pos_max[1]+1)+(j+Nrep_neg_max[1]))*(Nrep_neg_max[2]+Nrep_pos_max[2]+1)+(k+Nrep_neg_max[2]);
+        
+          // All processors must enter this loop if even one needs to
+          if (repflag[coord] == 0) outputflag = 1;
+          MPI_Allreduce(MPI_IN_PLACE, &outputflag, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+          if (outputflag) {
+          
+            // All processors loop the same number of times
+            outputcounter=0;
+            for(n=0; n<NumPartMax; n++) {
+             
+              if (n < NumPart) {
+            
+                // Did the particle start the timestep inside the lightcone?
+                flag = 0;
+                Xpart = P[n].Pos[0] - Origin_x + (i*Box);
+                Ypart = P[n].Pos[1] - Origin_y + (j*Box);
+                Zpart = P[n].Pos[2] - Origin_z + (k*Box);
+                Rpart_old2 = Xpart*Xpart+Ypart*Ypart+Zpart*Zpart;
+            
+                if (Rpart_old2 <= Rcomov_old2) flag = 1;
+            
+                // Have any particles that started inside the lightcone now exited?
+                if (flag) {
+                  Xpart += Delta_X[n];
+                  Ypart += Delta_Y[n];
+                  Zpart += Delta_Z[n];
+                  Rpart_new2 = Xpart*Xpart+Ypart*Ypart+Zpart*Zpart;
+              
+                  if (Rpart_new2 > Rcomov_new2) {
+                
+                    // Interpolate the particle position. We do this by first calculating the exact time at which
+                    // the particle exited the lightcone, then updating the position to there.
+                    Rpart_old = sqrt(Rpart_old2);
+                    Rpart_new = sqrt(Rpart_new2);
+                    AL = A + (AFF-A)*((Rcomov_old-Rpart_old)/((Rpart_new-Rpart_old)-(Rcomov_new-Rcomov_old)));
+                    da1_tmp = gsl_spline_eval(da1_spline, AL, da1_acc);
+                    da2_tmp = gsl_spline_eval(da2_spline, AL, da2_acc);
+                    dyyy_tmp = gsl_spline_eval(dyyy_spline, AL, dyyy_acc);
+                
+                    // Store the interpolated particle position and velocity.
+                    block[6*pc]     = (float)(lengthfac*(P[n].Pos[0] + (P[n].Vel[0]-sumx)*dyyy_tmp+subtractLPT*(P[n].Dz[0]*da1_tmp+P[n].D2[0]*da2_tmp) + (i*Box)));
+                    block[6*pc + 1] = (float)(lengthfac*(P[n].Pos[1] + (P[n].Vel[1]-sumy)*dyyy_tmp+subtractLPT*(P[n].Dz[1]*da1_tmp+P[n].D2[1]*da2_tmp) + (j*Box)));
+                    block[6*pc + 2] = (float)(lengthfac*(P[n].Pos[2] + (P[n].Vel[2]-sumz)*dyyy_tmp+subtractLPT*(P[n].Dz[2]*da1_tmp+P[n].D2[2]*da2_tmp) + (k*Box)));
+                    block[6*pc + 3] = (float)(velfac*fac*(P[n].Vel[0]-sumx+(P[n].Dz[0]*dv1+P[n].D2[0]*dv2)*subtractLPT));
+                    block[6*pc + 4] = (float)(velfac*fac*(P[n].Vel[1]-sumy+(P[n].Dz[1]*dv1+P[n].D2[1]*dv2)*subtractLPT));
+                    block[6*pc + 5] = (float)(velfac*fac*(P[n].Vel[2]-sumz+(P[n].Dz[2]*dv1+P[n].D2[2]*dv2)*subtractLPT));
+                    pc++;                
+                  }
+                }
+              }
+              // Do we need to output?
+              outputcounter++;
+              if (outputcounter == blockmaxlenmin) {
+                Output_Lightcone(pc, block, coord);
+                pc = 0;
+                outputcounter=0;
+              }
+            }
+            // Do we need to output some remainder?
+            if (outputcounter > 0) Output_Lightcone(pc, block, coord);
           }
         }
       }
- 
-      // Update the particle's position
-      P[n].Pos[0] = periodic_wrap(P[n].Pos[0]+Delta_Pos[0]);
-      P[n].Pos[1] = periodic_wrap(P[n].Pos[1]+Delta_Pos[1]);
-      P[n].Pos[2] = periodic_wrap(P[n].Pos[2]+Delta_Pos[2]); 
     }
-    
-    if (outputflag == blockmaxlenglob) {
-      Output_Lightcone(pc, blockmaxlen, block);
-      outputflag = 0;
-      for (i=0; i<(Nrep_neg_x+Nrep_pos_x+1)*(Nrep_neg_y+Nrep_pos_y+1)*(Nrep_neg_z+Nrep_pos_z+1); i++) pc[i] = 0;
-    }
-   
   }
-
-  if (outputflag > 0) Output_Lightcone(pc, blockmaxlen, block);
-  free(pc);
-  free(block);
+    
+  // Update the particle's position
+  for (n=0; n<NumPart; n++) {    
+    P[n].Pos[0] = periodic_wrap(P[n].Pos[0]+Delta_X[n]);
+    P[n].Pos[1] = periodic_wrap(P[n].Pos[1]+Delta_Y[n]);
+    P[n].Pos[2] = periodic_wrap(P[n].Pos[2]+Delta_Z[n]); 
+  }
  
+  free(Delta_X);
+  free(Delta_Y);
+  free(Delta_Z);
   gsl_spline_free(da1_spline);
   gsl_spline_free(da2_spline);
   gsl_spline_free(dyyy_spline);
@@ -464,15 +520,13 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
 
 // Output the lightcone data
 // =========================
-void Output_Lightcone(unsigned int * pc, unsigned int blockmaxlen, float * block) {
+void Output_Lightcone(unsigned int pc, float * block, int coord) {
 
   FILE * fp; 
   char buf[300];
-  int i, j, k;
-  int nprocgroup, groupTask, masterTask, repcount;
-  unsigned int chunk, coord;
-#ifdef GADGET_STYLE
-  int dummy1, dummy2;
+  int nprocgroup, groupTask, masterTask;
+#ifdef UNFORMATTED
+  unsigned int dummy[4];
 #else
   unsigned int n;
 #endif
@@ -483,56 +537,39 @@ void Output_Lightcone(unsigned int * pc, unsigned int blockmaxlen, float * block
   for(groupTask = 0; groupTask < nprocgroup; groupTask++) {
     if (ThisTask == (masterTask + groupTask)) {
 
-      // Loop over all replicates
-      repcount=0;
-      for (i = -Nrep_neg_x; i<=Nrep_pos_x; i++) {
-        for (j = -Nrep_neg_y; j<=Nrep_pos_y; j++) {
-          for (k = -Nrep_neg_z; k<=Nrep_pos_z; k++) {
-
-            coord = ((i+Nrep_neg_max[0])*(Nrep_neg_max[1]+Nrep_pos_max[1]+1)+(j+Nrep_neg_max[1]))*(Nrep_neg_max[2]+Nrep_pos_max[2]+1)+(k+Nrep_neg_max[2]);
-            if (repflag[coord] == 0) {
-
-              if(pc[repcount] > 0) {
-                sprintf(buf, "%s/%s_lightcone.%d", OutputDir, FileBase, coord*NTask+ThisTask);
-                if (writeflag[coord] == 0) {
-                  // Overwrite any pre-existing output files otherwise we'll append onto the end of them.
-                  if(!(fp = fopen(buf, "w"))) {
-                    printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-                    FatalError("lightcone.c", 93);
-                  }
-                  writeflag[coord] = 1;
-                } else {
-                  if(!(fp = fopen(buf, "a"))) {
-                    printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-                    FatalError("lightcone.c", 98);
-                  }
-                }
-
-#ifdef GADGET_STYLE
-                // write coordinates and velocities in unformatted binary
-                chunk = 6*blockmaxlen*repcount;
-                dummy1 = sizeof(pc[repcount]); 
-                dummy2 = sizeof(float) * 6 * pc[repcount];
-                my_fwrite(&dummy1, sizeof(dummy1), 1, fp);
-                my_fwrite(&(pc[repcount]), sizeof(unsigned int), 1, fp);
-                my_fwrite(&dummy1, sizeof(dummy1), 1, fp);
-                my_fwrite(&dummy2, sizeof(dummy2), 1, fp);
-                my_fwrite(&(block[chunk]), sizeof(float), 6 * pc[repcount], fp);
-                my_fwrite(&dummy2, sizeof(dummy2), 1, fp);
-#else
-                // write coordinates and velocities in ASCII
-                for(n=0; n<pc[repcount]; n++) {
-                  chunk = 6*(blockmaxlen*repcount+n);
-                  fprintf(fp,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",block[chunk],block[chunk+1],block[chunk+2],block[chunk+3],block[chunk+4],block[chunk+5]);
-                }
-#endif
-                fclose(fp);
-              }
-              repcount++;
-            }
+      // Some processors may not need to output
+      if(pc > 0) {
+        sprintf(buf, "%s/%s_lightcone.%d", OutputDir, FileBase, coord*NTask+ThisTask);
+        if (writeflag[coord] == 0) {
+          // Overwrite any pre-existing output files otherwise we'll append onto the end of them.
+          if(!(fp = fopen(buf, "w"))) {
+            printf("\nERROR: Can't write in file '%s'.\n\n", buf);
+            FatalError("lightcone.c", 93);
+          }
+          writeflag[coord] = 1;
+        } else {
+          if(!(fp = fopen(buf, "a"))) {
+            printf("\nERROR: Can't write in file '%s'.\n\n", buf);
+            FatalError("lightcone.c", 98);
           }
         }
-      } 
+
+#ifdef UNFORMATTED
+        // write coordinates and velocities in unformatted binary
+        dummy[0] = sizeof(pc);
+        dummy[1] = pc;
+        dummy[2] = sizeof(pc);
+        dummy[3] = sizeof(float)*6*pc; 
+        my_fwrite(&(dummy[0]), sizeof(unsigned int), 4, fp);
+        my_fwrite(&(block[0]), sizeof(float), 6 * pc, fp);
+        my_fwrite(&(dummy[3]), sizeof(unsigned int), 1, fp);
+#else
+        // write coordinates and velocities in ASCII
+        for(n=0; n<pc; n++) fprintf(fp,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n",block[6*n],block[6*n+1],block[6*n+2],block[6*n+3],block[6*n+4],block[6*n+5]);
+#endif
+        Noutput[coord] += pc;
+        fclose(fp);
+      }
     }
     ierr = MPI_Barrier(MPI_COMM_WORLD);
   }
