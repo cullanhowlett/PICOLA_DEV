@@ -396,7 +396,7 @@ int main(int argc, char **argv) {
       }
 
 #ifdef LIGHTCONE
-      if (i == Noutputs-1) {
+      if (i > 0) {
         Drift_Lightcone(A,AFF,AF,Di,Di2);
       } else {
         Drift(A,AFF,AF,Di,Di2);

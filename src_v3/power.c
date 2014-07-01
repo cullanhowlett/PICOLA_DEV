@@ -306,7 +306,7 @@ void read_power_table(void) {
 
   if((kmin > k_fundamental) || (kmax < k_Nyquist)) {
     if (ThisTask == 0) printf("\nERROR: [kmin, kmax] = [%lf,%lf] h/Mpc are not sufficient to cover [k_fundamental, k_nyquist] = [%lf,%lf] h/Mpc.\n\n",kmin,kmax,k_fundamental,k_Nyquist);
-    FatalError("power.c", 331);
+    //FatalError("power.c", 331);
   }
 
   // Sort by k

@@ -83,16 +83,6 @@ void read_outputs(void) {
     FatalError("read_param.c", 83);
   }
 
-#ifdef LIGHTCONE
-  if (Noutputs != 2) {
-    if(ThisTask == 0) {
-      fprintf(stdout,"\nERROR: Number of output redshifts for lightcone simulation not equal to 2.\n");
-      fprintf(stdout,"       For lightcone we output every step and so only need the redshift to start the lightcone at and the final redshift.\n\n");
-    }
-    FatalError("read_param.c", 92);
-  }
-#endif
-
 }
 
 // The comparison function to sort the output redshifts in descending order
