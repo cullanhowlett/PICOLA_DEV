@@ -1,0 +1,57 @@
+This is BibTeX, Version 0.99d (TeX Live 2013)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: PICOLA.aux
+The style file: elsarticle-harv.bst
+Database file #1: ../cullan.bib
+Warning--I didn't find a database entry for "Scoccimarro1998"
+Warning--I didn't find a database entry for "Moutarde1991"
+Warning--I didn't find a database entry for "Bouchet1995"
+Warning--I didn't find a database entry for "Tassev2013"
+Warning--I didn't find a database entry for "Hockney1982"
+Warning--I didn't find a database entry for "PMcode"
+Warning--I didn't find a database entry for "Klypin1997"
+Warning--I didn't find a database entry for "Quinn1998"
+Warning--I didn't find a database entry for "Scoccimarro2010"
+Warning--I didn't find a database entry for "Scoccimarro2012"
+You've used 2 entries,
+            2821 wiz_defined-function locations,
+            673 strings with 5455 characters,
+and the built_in function-call counts, 967 in all, are:
+= -- 104
+> -- 38
+< -- 2
++ -- 14
+- -- 12
+* -- 74
+:= -- 180
+add.period$ -- 6
+call.type$ -- 2
+change.case$ -- 12
+chr.to.int$ -- 2
+cite$ -- 2
+duplicate$ -- 36
+empty$ -- 69
+format.name$ -- 20
+if$ -- 199
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 2
+newline$ -- 14
+num.names$ -- 8
+pop$ -- 6
+preamble$ -- 2
+purify$ -- 10
+quote$ -- 0
+skip$ -- 30
+stack$ -- 0
+substring$ -- 64
+swap$ -- 2
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 18
+warning$ -- 0
+while$ -- 8
+width$ -- 0
+write$ -- 29
+(There were 10 warnings)

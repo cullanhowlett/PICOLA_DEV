@@ -1,0 +1,22 @@
+\providecommand{\aj}{Astron. J. }\providecommand{\apj}{Astrophys. J.
+  }\providecommand{\apjl}{Astrophys. J.
+  }\providecommand{\mnras}{MNRAS}\providecommand{\aap}{Astron.
+  Astrophys.}\providecommand{\jcap}{JCAP}\providecommand{\physrep}{Phys.
+  Reports}
+\begin{thebibliography}{2}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+\expandafter\ifx\csname url\endcsname\relax
+  \def\url#1{\texttt{#1}}\fi
+\expandafter\ifx\csname urlprefix\endcsname\relax\def\urlprefix{URL }\fi
+
+\bibitem[{Cole et~al.(2005)}]{Cole:2005}
+Cole, S., et~al., 2005. {The 2dF Galaxy Redshift Survey: Power-spectrum
+  analysis of the final dataset and cosmological implications}.
+  Mon.Not.Roy.Astron.Soc. 362, 505--534.
+
+\bibitem[{Eisenstein et~al.(2005)}]{Eisenstein:2005}
+Eisenstein, D.~J., et~al., 2005. {Detection of the baryon acoustic peak in the
+  large-scale correlation function of SDSS luminous red galaxies}. Astrophys.J.
+  633, 560--574.
+
+\end{thebibliography}
