@@ -50,13 +50,13 @@ void read_outputs(void) {
         if(sscanf(buf, "%lf, %d", &red, &nsteps) != 2) {
           if(ThisTask == 0) fprintf(stdout,"\nERROR: Line in Output Redshift File '%s' is in incorrect format.\n\n",buf);
           fclose(fd);
-          FatalError("read_param.c", 53);
+          FatalError((char *)"read_param.c", 53);
         }
         if (nsteps <= 0) {
           if ((Init_Redshift-red)/Init_Redshift > 1.0E-6) {
             if(ThisTask == 0) fprintf(stdout,"\nERROR: I read a value for nsteps of <= 0 up to redshift %lf.\n\n", red);
             fclose(fd);
-            FatalError("read_param.c", 59);
+            FatalError((char *)"read_param.c", 59);
           }
         }
         OutputList[Noutputs].Nsteps = nsteps;
@@ -67,12 +67,12 @@ void read_outputs(void) {
     fclose(fd);
   } else {
     if(ThisTask == 0) fprintf(stdout,"\nERROR: Output Redshift File '%s' not found.\n\n",OutputRedshiftFile);
-    FatalError("read_param.c", 70);
+    FatalError((char *)"read_param.c", 70);
   }
 
   if (Noutputs == 0) {
     if(ThisTask == 0) fprintf(stdout,"\nERROR: Found no output redshifts in file '%s'. Surely this is accidental?.\n\n",OutputRedshiftFile);
-    FatalError("read_param.c", 75);
+    FatalError((char *)"read_param.c", 75);
   }
 
   // Sort the output list via the redshifts, in descending order (in case it already isn't)
@@ -80,7 +80,7 @@ void read_outputs(void) {
 
   if (OutputList[0].Redshift > Init_Redshift) {
     if(ThisTask == 0) fprintf(stdout,"\nERROR: The highest output redshift (%lf) is greater than the initial redshift (%lf).\nzn", OutputList[0].Redshift, Init_Redshift);
-    FatalError("read_param.c", 83);
+    FatalError((char *)"read_param.c", 83);
   }
 
 }
@@ -93,7 +93,7 @@ int sort_redshift(const void * Item1, const void * Item2) {
   if((*Output1).Redshift > (*Output2).Redshift) return -1;
   if((*Output1).Redshift < (*Output2).Redshift) return 1;
   if(ThisTask == 0) fprintf(stdout,"\nERROR: Duplicate output redshift (%lf) in Output Redshift File.\n\n", (*Output1).Redshift);
-  FatalError("read_param.c", 106);
+  FatalError((char *)"read_param.c", 96);
   return 0;
 }
 
@@ -312,7 +312,7 @@ void read_parameterfile(char * fname) {
     }
   } else {
     if(ThisTask == 0) fprintf(stdout,"\nERROR: Parameter file '%s' not found.\n\n",fname);
-    FatalError("read_param.c", 325);
+    FatalError((char *)"read_param.c", 315);
   }
 
   if (NumFilesWrittenInParallel < 1) {
@@ -320,7 +320,7 @@ void read_parameterfile(char * fname) {
       printf("\nERROR: `NumFilesWrittenInParallel' is less than 1 so no processors will be writing out the data.\n");
       printf("        Please set NumFileWrittenInParallel > 0'.\n\n");
     }
-    FatalError("read_param.c", 333);
+    FatalError((char *)"read_param.c", 323);
   }
 
   if (NTask < NumFilesWrittenInParallel) {
@@ -336,7 +336,7 @@ void read_parameterfile(char * fname) {
       printf("\nERROR: You are running with both power spectrum and transfer function.\n");
       printf("       Please select the appropriate one.\n\n");
     }
-    FatalError("read_param.c", 349);
+    FatalError((char *)"read_param.c", 339);
   }
 
 #ifdef GAUSSIAN
@@ -345,7 +345,7 @@ void read_parameterfile(char * fname) {
       printf("\nERROR: You are running with neither power spectrum nor transfer function.\n");
       printf("       Please set either WhichSpectrum or WhichTransfer to a non-zero value.\n\n");
     }
-    FatalError("read_param.c", 358);
+    FatalError((char *)"read_param.c", 348);
   }
 #else 
   if((WhichSpectrum != 0) || (WhichTransfer == 0)) { 
@@ -353,32 +353,32 @@ void read_parameterfile(char * fname) {
       printf("\nERROR: Non-Gaussian models require the transfer function as input.\n");
       printf("       Switch WhichSpectrum to zero and select a type of transfer function in the input parameter file.\n\n");
     } 
-    FatalError("read_param.c", 366);
+    FatalError((char *)"read_param.c", 356);
   }
 #endif
 #ifdef LOCAL_FNL 
    if(PrimordialIndex != 1.0) {
      if (ThisTask == 0) printf("\nERROR: Local non-gaussianity with tilted power spectrum requires the GENERIC_FNL option in the Makefile\n\n");
-     FatalError("read_param.c", 372);
+     FatalError((char *)"read_param.c", 362);
    }
 #endif 
 #ifdef ORTHO_FNL 
    if(PrimordialIndex != 1.0) {
      if (ThisTask == 0) printf("\nERROR: Orthogonal non-gaussianity with tilted power spectrum requires the GENERIC_FNL option in the Makefile\n\n"); 
-     FatalError("read_param.c", 378);
+     FatalError((char *)"read_param.c", 368);
    }
 #endif 
 #ifdef EQUIL_FNL 
    if(PrimordialIndex != 1.0) {
      if (ThisTask == 0) printf("\nERROR: Equilateral non-gaussianity with tilted power spectrum requires the GENERIC_FNL option in the Makefile\n\n");
-     FatalError("read_param.c", 384);
+     FatalError((char *)"read_param.c", 374);
    }
 #endif 
 
 #ifndef GAUSSIAN
   if (Fnl_Redshift < Init_Redshift) {
     if (ThisTask == 0) printf("\nERROR: Fnl_Redshift must be >= Initial Redshift for us to generate non-Gaussian initial conditions.\n\n");
-    FatalError("read_param.c",391);
+    FatalError((char *)"read_param.c",381);
   }
 #endif
 

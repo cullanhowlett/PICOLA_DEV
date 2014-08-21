@@ -31,11 +31,21 @@
 void GetDisplacements(void) {
 
   int j;
+#ifdef TIMING
+  double start, end;
+#endif
 
   // First we check whether all the particles are on the correct processor after the last time step/
   // original 2LPT displacement and move them if not
   if (ThisTask == 0) printf("Moving particles across task boundaries...\n");
+#ifdef TIMING
+  start = clock();
+#endif
   MoveParticles();
+#ifdef TIMING
+  end=clock();
+  Time_Move[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;  
+#endif
 
 #ifdef MEMORY_MODE
   density = (float_kind *)malloc(2*Total_size*sizeof(float_kind));
@@ -49,7 +59,14 @@ void GetDisplacements(void) {
 
   // Then we do the Cloud-in-Cell assignment to get the density grid and FFT it.  
   if (ThisTask == 0) printf("Calculating density using Cloud-in-Cell...\n");
+#ifdef TIMING
+  start = clock();
+#endif
   PtoMesh();
+#ifdef TIMING
+  end=clock();
+  Time_PtoMesh[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;  
+#endif
 
 #ifdef MEMORY_MODE
   N11  = (float_kind *)malloc(2*Total_size*sizeof(float_kind));
@@ -72,7 +89,14 @@ void GetDisplacements(void) {
   // This returns N11,N12,N13 which hold the components of
   // the vector (grad grad^{-2} density) on a grid.
   if (ThisTask == 0) printf("Calculating forces...\n");
-  Forces(); 
+#ifdef TIMING
+  start = clock();
+#endif
+  Forces();
+#ifdef TIMING
+  end=clock();
+  Time_Forces[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;  
+#endif 
 
 #ifdef MEMORY_MODE
   free(density);
@@ -88,7 +112,14 @@ void GetDisplacements(void) {
     
   // Now find the accelerations at the particle positions using 3-linear interpolation. 
   if (ThisTask == 0) printf("Calculating accelerations...\n");
+#ifdef TIMING
+  start = clock();
+#endif
   MtoParticles();
+#ifdef TIMING
+  end=clock();
+  Time_MtoParticles[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;  
+#endif
 
 #ifdef MEMORY_MODE
   free(N11);
@@ -172,7 +203,7 @@ void MoveParticles(void) {
                 if (send_count_left >= send_count_max) {
                   printf("\nERROR: Number of particles to be sent left on task %d is greater than send_count_max\n", ThisTask);
                   printf("       You must increase the size of the buffer region.\n\n");
-                  FatalError("auxPM.c", 175);
+                  FatalError((char *)"auxPM.c", 206);
                 }
               }
             } else {
@@ -187,7 +218,7 @@ void MoveParticles(void) {
                 if (send_count_right >= send_count_max) {
                   printf("\nERROR: Number of particles to be sent right on task %d is greater than send_count_max\n", ThisTask);
                   printf("       You must increase the size of the buffer region.\n\n");
-                  FatalError("auxPM.c", 190);
+                  FatalError((char *)"auxPM.c", 221);
                 }
               }
             }
@@ -235,7 +266,7 @@ void MoveParticles(void) {
     if (NumPart+recv_count_left+recv_count_right > Local_np*Nsample*Nsample*Buffer) {
       printf("\nERROR: Number of particles to be recieved on task %d is greater than available space\n", ThisTask);
       printf("       You must increase the size of the buffer region.\n\n");
-      FatalError("auxPM.c", 238);
+      FatalError((char *)"auxPM.c", 269);
     }
 
     // Copy across the new particles and store them at the end (of the memory). Then modify NumPart to include them.
@@ -559,7 +590,7 @@ double periodic_wrap(double x)
 
 // Error message
 // =============
-void FatalError(char * filename, int linenum) {
+void FatalError(char* filename, int linenum) {
   printf("Fatal Error at line %d in file %s\n", linenum, filename);
   fflush(stdout);
   free(OutputList);
@@ -574,7 +605,7 @@ size_t my_fwrite(void *ptr, size_t size, size_t nmemb, FILE * stream) {
   if((nwritten = fwrite(ptr, size, nmemb, stream)) != nmemb) {
     printf("\nERROR: I/O error (fwrite) on task=%d has occured.\n\n", ThisTask);
     fflush(stdout);
-    FatalError("auxPM.c", 577);
+    FatalError((char *)"auxPM.c", 608);
   }
   return nwritten;
 }

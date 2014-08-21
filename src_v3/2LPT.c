@@ -216,7 +216,7 @@ void displacement_fields(void) {
 
   gsl_rng_set(random_generator, Seed);
 
-  if(!(seedtable = (unsigned int *)malloc(Nmesh * Nmesh * sizeof(unsigned int)))) FatalError("2LPT.c", 219);
+  if(!(seedtable = (unsigned int *)malloc(Nmesh * Nmesh * sizeof(unsigned int)))) FatalError((char *)"2LPT.c", 219);
 
   for(i = 0; i < Nmesh / 2; i++) {
     for(j = 0; j < i; j++)     seedtable[i * Nmesh + j] = (unsigned int)(0x7fffffff * gsl_rng_uniform(random_generator));
@@ -366,6 +366,11 @@ void displacement_fields(void) {
 // Non-gaussian initial conditions
 // ===============================
 #else
+
+#ifdef TIMING
+  double start, end;
+  start = clock();
+#endif  
 
   if(ThisTask == 0) {
     printf("Starting non-gaussian calculations...\n");
@@ -522,7 +527,7 @@ void displacement_fields(void) {
       if(ThisTask == 0) printf("Adjusting ker0 = - (kerA + kerB), ker0=%f, kerA=%f, kerB=%f\n", ker0,kerA,kerB);
     } else {
       if(ThisTask == 0) printf("\nERROR: ker0 + kerA + kerB does not equal 0\n"); 
-      FatalError("2LPT.c", 525);
+      FatalError((char *)"2LPT.c", 530);
     }
 
     if(ThisTask == 0) printf("Values: %lf %lf %lf %lf\n",kerCoef,ker0,kerA,kerB);
@@ -1113,6 +1118,11 @@ void displacement_fields(void) {
   } 
 
   free(cpot);
+
+#ifdef TIMING
+  end = clock();
+  Time_2LPTng = (end-start)/(double)CLOCKS_PER_SEC;
+#endif
 
 #endif
 

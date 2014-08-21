@@ -23,6 +23,7 @@
 /* This file contains all the global variable definitions.*/
 /* =======================================================*/
 
+#include <time.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -130,6 +131,7 @@ header;
 
 // Cosmological parameters (at z=0)
 extern char OutputRedshiftFile[500];  // The list of output redshifts
+extern int timeSteptot;               // The total number of timsteps made
 extern double Fnl;                    // The primordial non-gaussianity parameter for local, equilateral or orthogonal
 extern double Anorm;        // The normalisation of the power spectrum/ transfer function
 extern double Omega;        // The total matter density, CDM+Baryon
@@ -187,6 +189,19 @@ extern struct part_data {
   float_kind Pos[3];          // The position of the particle in the X, Y and Z directions
   float_kind Vel[3];          // The velocity of the particle in the X, Y and Z directions
 } *P;
+#endif
+
+// Variables for timing
+#ifdef TIMING
+extern double Time_Init;                                // Initialization time (run parameters, power spectrum, FFTs)
+extern double Time_2LPT, Time_2LPTng, Time_2LPToutput;   // 2LPT time, including non-Gaussian kernel calculation and output of initial conditions (if necessary)
+extern double * Time_Move;                              // Moving the particle between processors
+extern double * Time_PtoMesh;      // Calculating the density 
+extern double * Time_Forces;       // Calculating the forces
+extern double * Time_MtoParticles; // Assigning displacement to particles
+extern double * Time_Kick;         // Kicking the particles
+extern double * Time_Drift;        // Drifting the particles
+extern double * Time_Output;       // Outputting the particles (if necessary. If lightcone then this is the time during Drift_Lightcone)
 #endif
 
 // Simulation variables

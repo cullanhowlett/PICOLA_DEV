@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.7.11)  14 JUL 2014 15:33
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.7.11)  14 JUL 2014 18:15
 entering extended mode
  \write18 enabled.
  %&-line parsing enabled.
@@ -422,13 +422,11 @@ Overfull \hbox (3.77779pt too wide) in paragraph at lines 160--161
 h-light ar-eas where
  []
 
-<PICOLAchart.pdf, id=22, 665.48625pt x 475.7775pt>
-File: PICOLAchart.pdf Graphic file (type pdf)
- <use PICOLAchart.pdf>
-Package pdftex.def Info: PICOLAchart.pdf used on input line 164.
-(pdftex.def)             Requested size: 417.6016pt x 298.55806pt.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <8> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 165.
+<PICOLAchart2.pdf, id=22, 840.13875pt x 499.8675pt>
+File: PICOLAchart2.pdf Graphic file (type pdf)
+ <use PICOLAchart2.pdf>
+Package pdftex.def Info: PICOLAchart2.pdf used on input line 164.
+(pdftex.def)             Requested size: 495.8984pt x 295.04892pt.
 
 [3]
 Overfull \hbox (0.38748pt too wide) in paragraph at lines 176--177
@@ -441,14 +439,16 @@ File: cloudincell.pdf Graphic file (type pdf)
  <use cloudincell.pdf>
 Package pdftex.def Info: cloudincell.pdf used on input line 180.
 (pdftex.def)             Requested size: 239.00314pt x 147.7855pt.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <8> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 181.
 
-[4 <./PICOLAchart.pdf> <./cloudincell.pdf>]
+[4 <./PICOLAchart2.pdf> <./cloudincell.pdf>]
 Overfull \hbox (2.61707pt too wide) in paragraph at lines 193--194
 \OT1/ptm/m/n/10 ni-ca-tions to trans-pose the mesh and per-form a multi-dimensi
 onal
  []
 
-<moveparticles.pdf, id=141, 579.16376pt x 253.94875pt>
+<moveparticles.pdf, id=328, 579.16376pt x 253.94875pt>
 File: moveparticles.pdf Graphic file (type pdf)
  <use moveparticles.pdf>
 Package pdftex.def Info: moveparticles.pdf used on input line 201.
@@ -487,41 +487,37 @@ Package natbib Warning: There were undefined citations.
 
 [7
 
-] (./PICOLA.aux)
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
- ) 
+] (./PICOLA.aux) ) 
 Here is how much of TeX's memory you used:
  4159 strings out of 493315
- 57109 string characters out of 6137904
+ 57114 string characters out of 6137904
  137392 words of memory out of 5000000
  7503 multiletter control sequences out of 15000+600000
  31000 words of font info for 70 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
  38i,12n,34p,1788b,274s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/local/texlive/2013/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/t
-exlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/te
-xlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/tex
-live/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texl
-ive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/local/texliv
-e/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/
-2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb></usr/local/texlive/
-2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/20
-13/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texlive/2013/
-texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2013/tex
-mf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2013/texm
-f-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/local/texlive/2013/texmf-
-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/local/texlive/2013/texmf-di
-st/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2013/texmf-dist
-/fonts/type1/urw/courier/ucrr8a.pfb></usr/local/texlive/2013/texmf-dist/fonts/t
-ype1/urw/times/utmb8a.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/urw/t
-imes/utmr8a.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/urw/times/utmri
-8a.pfb>
-Output written on PICOLA.pdf (7 pages, 327944 bytes).
+{/usr/local/texlive/2013/texmf-dist/fonts/enc/dvips/base/8r.e
+nc}</usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pf
+b></usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
+></usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb>
+</usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></
+usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></us
+r/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb></us
+r/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/
+local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/loc
+al/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/
+texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/t
+exlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/local/tex
+live/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/local/texli
+ve/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive
+/2013/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/local/texlive/2013/te
+xmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2013/texmf-dist/f
+onts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1
+/urw/times/utmri8a.pfb>
+Output written on PICOLA.pdf (7 pages, 372480 bytes).
 PDF statistics:
- 394 PDF objects out of 1000 (max. 8388607)
- 233 compressed objects within 3 object streams
+ 581 PDF objects out of 1000 (max. 8388607)
+ 325 compressed objects within 4 object streams
  0 named destinations out of 1000 (max. 500000)
  16 words of extra memory for PDF output out of 10000 (max. 10000000)
 

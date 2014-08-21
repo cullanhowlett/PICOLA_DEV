@@ -47,10 +47,15 @@ int main(int argc, char **argv) {
     ierr = MPI_Finalize();
     exit(1);
   }
-   
+
   // Read the run parameters and setup code
   // ======================================
   int i, stepDistr;
+#ifdef TIMING
+  double start, end;
+  double start2, end2;
+  start = clock();
+#endif
 
   if (ThisTask == 0) {
     printf("\nReading Input Parameters and setting up PICOLA\n");
@@ -150,11 +155,17 @@ int main(int argc, char **argv) {
     fflush(stdout);
   }
 
+#ifdef TIMING
+  end=clock();
+  Time_Init = (end-start)/(double)CLOCKS_PER_SEC;
+  start=clock();
+#endif
+
   // Create the calculate the Zeldovich and 2LPT displacements and create the initial conditions
   // ===========================================================================================
   int j, k, m;
   int NoutputStart = 0;
-  int timeStep, timeSteptot=0;
+  int timeStep;
   unsigned int coord=0;
   double da=0;
   double A=1.0/(1.0+Init_Redshift);  // This is the scale factor which we'll be advancing below.
@@ -224,10 +235,30 @@ int main(int argc, char **argv) {
     sumy=0;
     sumz=0;
 
+#ifdef TIMING
+    start2 = clock();
+#endif
     Output(A,Dv,Dv2);
+#ifdef TIMING
+    end2 = clock();
+    Time_2LPToutput = (end-start)/(double)CLOCKS_PER_SEC;
+#endif
 
     // If this is the only output timestep then simply skip to the end
-    if(Noutputs == 1) goto finalize;
+    if(Noutputs == 1) {
+#ifdef TIMING
+      end=clock();
+      Time_2LPT = (end-start)/(double)CLOCKS_PER_SEC;
+      Time_Move    = (double *)calloc(1, sizeof(double));
+      Time_PtoMesh = (double *)calloc(1, sizeof(double));
+      Time_Forces       = (double *)calloc(1, sizeof(double));
+      Time_MtoParticles = (double *)calloc(1, sizeof(double));
+      Time_Kick         = (double *)calloc(1, sizeof(double));
+      Time_Drift  = (double *)calloc(1, sizeof(double));
+      Time_Output = (double *)calloc(1, sizeof(double));
+#endif
+      goto finalize;
+    }
 
 #endif
 
@@ -260,14 +291,39 @@ int main(int argc, char **argv) {
 #endif
 #endif
 
+#ifdef TIMING
+  end=clock();
+  Time_2LPT = (end -start)/(double)CLOCKS_PER_SEC;
+  int nstepstot = 0;
+#ifdef LIGHTCONE
+  for (i=NoutputStart;i<Noutputs;i++) {
+#else
+  for (i=NoutputStart;i<=Noutputs;i++) {
+#endif
+    if (i == Noutputs) {
+      nstepstot += 1;
+    } else {
+      nstepstot += OutputList[i].Nsteps;
+    }
+  }
+  Time_Move    = (double *)calloc(nstepstot, sizeof(double));
+  Time_PtoMesh = (double *)calloc(nstepstot, sizeof(double));
+  Time_Forces       = (double *)calloc(nstepstot, sizeof(double));
+  Time_MtoParticles = (double *)calloc(nstepstot, sizeof(double));
+  Time_Kick         = (double *)calloc(nstepstot, sizeof(double));
+  Time_Drift  = (double *)calloc(nstepstot, sizeof(double));
+  Time_Output = (double *)calloc(nstepstot, sizeof(double));
+#endif
+
   if(ThisTask == 0) {
     printf("Beginning timestepping\n");
     printf("======================\n");
     fflush(stdout);
-  }
+  }   
 
   // Loop over all the timesteps in the timestep list
   // ================================================
+  timeSteptot=0;
 #ifdef LIGHTCONE
   for (i=NoutputStart;i<Noutputs;i++) {
 #else
@@ -290,6 +346,12 @@ int main(int argc, char **argv) {
     // ========================================================
     for (timeStep=0;timeStep<nsteps;timeStep++) {
 
+#ifdef LIGHTCONE
+      // For a lightcone simulation we always want the velocity set to mid-point of interval.
+      if (stepDistr == 0) AF=A+da*0.5;
+      if (stepDistr == 1) AF=A*exp(da*0.5);
+      if (stepDistr == 2) AF=AofTime((CosmoTime(AFF)+CosmoTime(A))*0.5); 
+#else
       // Calculate the time to update to
       // Half timestep for kick at output redshift to bring the velocities and positions to the same time
       if ((timeStep == 0) && (i != NoutputStart)) {
@@ -303,7 +365,7 @@ int main(int argc, char **argv) {
         if (stepDistr == 1) AF=A*exp(da*0.5);
         if (stepDistr == 2) AF=AofTime((CosmoTime(AFF)+CosmoTime(A))*0.5); 
       }
-
+#endif
       if (stepDistr == 0) AFF=A+da;
       if (stepDistr == 1) AFF=A*exp(da);
       if (stepDistr == 2) AFF=AofTime(CosmoTime(A)+da);
@@ -316,7 +378,7 @@ int main(int argc, char **argv) {
           printf("z = %lf -> z = %lf\n", 1.0/A-1.0, 1.0/AFF-1.0);
           fflush(stdout);
         } else {
-          printf("Half timestep to update velocities...\n");
+          printf("Final half timestep to update velocities...\n");
           fflush(stdout);
         }
       }
@@ -338,7 +400,14 @@ int main(int argc, char **argv) {
       // can use to invert the previous drift step and get the particle positions at AF and AFF     //                                                                                             //
       /**********************************************************************************************/
 
+#ifdef TIMING
+      start=clock();
+#endif
       Kick(AI,AF,A,Di);
+#ifdef TIMING
+      end=clock();
+      Time_Kick[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;
+#endif
 
 #ifndef LIGHTCONE
 
@@ -358,7 +427,14 @@ int main(int argc, char **argv) {
         Dv  = DprimeQ(A);    // dD_{za}/dy
         Dv2 = growthD2v(A);  // dD_{2lpt}/dy
 
+#ifdef TIMING
+        start=clock();
+#endif
         Output(A,Dv,Dv2);
+#ifdef TIMING
+        end=clock();
+        Time_Output[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;
+#endif
 
         // If we have reached the last output timestep we skip to the end
         if(i == Noutputs) {
@@ -381,7 +457,14 @@ int main(int argc, char **argv) {
         sumDy=0;
         sumDz=0;
 
-        Kick(AI,AF,A,Di);      
+#ifdef TIMING
+        start=clock();
+#endif
+        Kick(AI,AF,A,Di);
+#ifdef TIMING
+        end=clock();
+        Time_Kick[timeSteptot-1] += (end-start)/(double)CLOCKS_PER_SEC;
+#endif
       }
 
 #endif
@@ -395,6 +478,9 @@ int main(int argc, char **argv) {
         fflush(stdout);
       }
 
+#ifdef TIMING
+      start = clock();
+#endif
 #ifdef LIGHTCONE
       if (i > 0) {
         Drift_Lightcone(A,AFF,AF,Di,Di2);
@@ -404,7 +490,10 @@ int main(int argc, char **argv) {
 #else
       Drift(A,AFF,AF,Di,Di2);
 #endif
-
+#ifdef TIMING
+      end=clock();
+      Time_Drift[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;
+#endif
 
       // Step in time
       // ================
@@ -436,7 +525,18 @@ int main(int argc, char **argv) {
   }
 
 #ifdef LIGHTCONE
+#ifdef TIMING
+  start = clock();
+#endif
   Output_Info_Lightcone();
+#ifdef TIMING
+  end = clock();
+  Time_Output[timeSteptot-1] += (end-start)/(double)CLOCKS_PER_SEC;
+#endif
+#endif
+
+#ifdef TIMING
+  Output_Timing();
 #endif
 
   free_powertable();
@@ -600,7 +700,7 @@ void Output(double A, double Dv, double Dv2) {
         sprintf(buf, "%s/%s_z%dp%03d.%d", OutputDir, FileBase, (int)Z, (int)rint((Z-(int)Z)*1000), ThisTask);
         if(!(fp = fopen(buf, "w"))) {
           printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-          FatalError("main.c", 597);
+          FatalError((char *)"main.c", 697);
         }
 #ifdef GADGET_STYLE
         // Gadget header stuff
@@ -740,7 +840,7 @@ void Output_Info(double A) {
     sprintf(buf, "%s/%s_z%dp%03d.info", OutputDir, FileBase, (int)Z, (int)rint((Z-(int)Z)*1000));
     if(!(fp = fopen(buf, "w"))) {
       printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-      FatalError("main.c", 736);
+      FatalError((char *)"main.c", 837);
     }
     fprintf(fp, "#    FILENUM      XMIN         YMIN        ZMIN         XMAX         YMAX         ZMAX         NPART    \n");
     double y0 = 0.0;
@@ -760,3 +860,80 @@ void Output_Info(double A) {
 
   return;
 }
+
+#ifdef TIMING
+void Output_Timing(void) {
+
+  FILE * fp; 
+  char buf[300];
+  int i;
+
+  if (ThisTask == 0) {
+    sprintf(buf, "%s/%s_timing_0.dat", OutputDir, FileBase);
+    if(!(fp = fopen(buf, "w"))) {
+      printf("\nERROR: Can't write in file '%s'.\n\n", buf);
+      FatalError((char *)"main.c", 869);
+    }
+    fprintf(fp, "Initialisation Time:\n");
+    fprintf(fp, "%12.6lf\n\n", Time_Init);
+    fprintf(fp, "2LPT Time        (Non_Gaussian Kernel        Output):\n");
+    fprintf(fp, "%12.6lf     %12.6lf     %12.6lf\n\n", Time_2LPT, Time_2LPTng, Time_2LPToutput);
+    fprintf(fp, "Timestep Times:\n");
+    fprintf(fp, "Move          PtoMesh          Forces          MtoParticles          Kick           Drift           Output\n");
+    for (i=0; i<timeSteptot; i++) {
+      fprintf(fp, "%12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf\n", 
+                   Time_Move[i], Time_PtoMesh[i], Time_Forces[i], Time_MtoParticles[i], Time_Kick[i], Time_Drift[i], Time_Output[i]);
+    }
+    fclose(fp);
+    MPI_Reduce(MPI_IN_PLACE, &Time_Init, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(MPI_IN_PLACE, &Time_2LPT, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(MPI_IN_PLACE, &Time_2LPTng, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);   
+    MPI_Reduce(MPI_IN_PLACE, &Time_2LPToutput, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(MPI_IN_PLACE, &(Time_Move[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(MPI_IN_PLACE, &(Time_PtoMesh[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(MPI_IN_PLACE, &(Time_Forces[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);         
+    MPI_Reduce(MPI_IN_PLACE, &(Time_MtoParticles[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(MPI_IN_PLACE, &(Time_Kick[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(MPI_IN_PLACE, &(Time_Drift[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(MPI_IN_PLACE, &(Time_Output[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    sprintf(buf, "%s/%s_timing_all.dat", OutputDir, FileBase);
+    if(!(fp = fopen(buf, "w"))) {
+      printf("\nERROR: Can't write in file '%s'.\n\n", buf);
+      FatalError((char *)"main.c", 869);
+    }
+    fprintf(fp, "Initialisation Time:\n");
+    fprintf(fp, "%12.6lf\n\n", Time_Init);
+    fprintf(fp, "2LPT Time        (Non_Gaussian Kernel        Output):\n");
+    fprintf(fp, "%12.6lf     %12.6lf     %12.6lf\n\n", Time_2LPT, Time_2LPTng, Time_2LPToutput);
+    fprintf(fp, "Timestep Times:\n");
+    fprintf(fp, "Move          PtoMesh          Forces          MtoParticles          Kick           Drift           Output\n");
+    for (i=0; i<timeSteptot; i++) {
+      fprintf(fp, "%12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf\n", 
+                   Time_Move[i], Time_PtoMesh[i], Time_Forces[i], Time_MtoParticles[i], Time_Kick[i], Time_Drift[i], Time_Output[i]);
+    }
+    fclose(fp);
+  } else {
+    MPI_Reduce(&Time_Init, &Time_Init, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&Time_2LPT, &Time_2LPT, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(&Time_2LPTng, &Time_2LPTng, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);   
+    MPI_Reduce(&Time_2LPToutput, &Time_2LPToutput, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(&(Time_Move[0]), &(Time_Move[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(&(Time_PtoMesh[0]), &(Time_PtoMesh[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&(Time_Forces[0]), &(Time_Forces[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);         
+    MPI_Reduce(&(Time_MtoParticles[0]), &(Time_MtoParticles[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(&(Time_Kick[0]), &(Time_Kick[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(&(Time_Drift[0]), &(Time_Drift[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(&(Time_Output[0]), &(Time_Output[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);                     
+  }
+
+  free(Time_Move);
+  free(Time_PtoMesh);
+  free(Time_Forces);
+  free(Time_MtoParticles);
+  free(Time_Kick);
+  free(Time_Drift);
+  free(Time_Output);
+
+}
+#endif
+

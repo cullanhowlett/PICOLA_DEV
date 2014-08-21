@@ -28,6 +28,9 @@ void Output_Info(double A);
 void Output(double A, double Dv, double Dv2);
 void Kick(double AI, double AF, double A, double Di);
 void Drift(double A, double AFF, double AF, double Di, double Di2);
+#ifdef TIMING
+void Output_Timing(void);
+#endif
 
 // cosmo.c
 double gpQ(double a);

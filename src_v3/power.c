@@ -73,7 +73,7 @@ void read_transfer_table(void) {
 
   if(!(fd = fopen(buf, "r"))) {
     if (ThisTask == 0) printf("\nERROR: Can't read input transfer function  in file '%s'.\n\n", buf);
-    FatalError("power.c", 80);
+    FatalError((char *)"power.c", 76);
   }
 
   NTransferTable = 0;
@@ -98,7 +98,7 @@ void read_transfer_table(void) {
 
   if(!(fd = fopen(buf, "r"))) {
     if (ThisTask == 0) printf("\nERROR: Can't read input transfer function in file '%s'.\n\n", buf);
-    FatalError("power.c", 105);
+    FatalError((char *)"power.c", 101);
   }
 
   NTransferTable = 0;
@@ -202,7 +202,7 @@ double TransferFunc_Tabulated(double k) {
 
   dlogk = TransferTable[binhigh].logk - TransferTable[binlow].logk;
 
-  if(dlogk == 0) FatalError("power.c", 210);
+  if(dlogk == 0) FatalError((char *)"power.c", 205);
 
   u = (logk - TransferTable[binlow].logk) / dlogk;
 
@@ -252,7 +252,7 @@ void read_power_table(void) {
 
   if(!(fd = fopen(buf, "r"))) {
     if (ThisTask == 0) printf("\nERROR: Can't read input power spectrum in file '%s'.\n\n", buf);
-    FatalError("power.c", 277);
+    FatalError((char *)"power.c", 255);
   }
 
   NPowerTable = 0;
@@ -277,7 +277,7 @@ void read_power_table(void) {
 
   if(!(fd = fopen(buf, "r"))) {
     if (ThisTask == 0) printf("\nERROR: Can't read input power spectrum in file '%s'.\n\n", buf);
-    FatalError("power.c", 302);
+    FatalError((char *)"power.c", 280);
   }
 
   NPowerTable = 0;
@@ -306,7 +306,7 @@ void read_power_table(void) {
 
   if((kmin > k_fundamental) || (kmax < k_Nyquist)) {
     if (ThisTask == 0) printf("\nERROR: [kmin, kmax] = [%lf,%lf] h/Mpc are not sufficient to cover [k_fundamental, k_nyquist] = [%lf,%lf] h/Mpc.\n\n",kmin,kmax,k_fundamental,k_Nyquist);
-    //FatalError("power.c", 331);
+    //FatalError((char *)"power.c", 309);
   }
 
   // Sort by k
@@ -397,7 +397,7 @@ double PowerSpec_Tabulated(double k) {
 
   dlogk = PowerTable[binhigh].logk - PowerTable[binlow].logk;
 
-  if(dlogk == 0) FatalError("power.c", 426);
+  if(dlogk == 0) FatalError((char *)"power.c", 400);
 
   u = (logk - PowerTable[binlow].logk) / dlogk;
 

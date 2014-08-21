@@ -25,16 +25,6 @@
 
 #include "vars.h"
 
-#ifdef SINGLE_PRECISION
-typedef float         float_kind;    // Single precision floating types
-typedef fftwf_complex complex_kind;  // Single precision complex type
-typedef fftwf_plan    plan_kind;     // Single precision FFTW plan
-#else
-typedef double       float_kind;     // Double precision floating types
-typedef fftw_complex complex_kind;   // Double precision complex type
-typedef fftw_plan    plan_kind;      // Double precision FFTW plan
-#endif
-
 // MPI variables
 int ierr;             // The return value for mpi routines
 int NTask;            // The total number of tasks
@@ -86,6 +76,7 @@ struct io_header_1 header;
 
 // Cosmological parameters (at z=0)
 char OutputRedshiftFile[500];  // The list of output redshifts
+int timeSteptot;               // The total number of timsteps made
 double Fnl;                    // The primordial non-gaussianity parameter for local, equilateral or orthogonal
 double Anorm;        // The normalisation of the power spectrum/ transfer function
 double Omega;        // The total matter density, CDM+Baryon
@@ -119,6 +110,19 @@ float_kind * ZA[3];      // Vectors to hold the Zeldovich displacements before p
 float_kind * LPT[3];     // Vectors to hold the 2LPT displacements before particle initialisation
 #endif
 struct part_data * P;
+
+// Variables for timing
+#ifdef TIMING
+double Time_Init;                                 // Initialization time (run parameters, power spectrum, FFTs)
+double Time_2LPT, Time_2LPTng, Time_2LPToutput;   // 2LPT time, including non-Gaussian kernel calculation and output of initial conditions (if necessary)
+double * Time_Move;                               // Moving the particle between processors
+double * Time_PtoMesh;           // Calculating the density 
+double * Time_Forces;            // Calculating the forces
+double * Time_MtoParticles;      // Assigning displacement to particles
+double * Time_Kick;              // Kicking the particles
+double * Time_Drift;             // Drifting the particles
+double * Time_Output;            // Outputting the particles (if necessary. If lightcone then this is the time during Drift_Lightcone)
+#endif
 
 // Simulation variables
 // ====================
