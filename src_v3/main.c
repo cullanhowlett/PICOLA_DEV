@@ -52,9 +52,14 @@ int main(int argc, char **argv) {
   // ======================================
   int i, stepDistr;
 #ifdef TIMING
-  double start, end;
-  double start2, end2;
-  start = clock();
+  double startcpu, endcpu;
+  double startwall, endwall;
+#ifndef LIGHTCONE
+  double startcpu2, endcpu2;
+  double startwall2, endwall2;
+#endif
+  startcpu = (double)clock();
+  startwall = MPI_Wtime();
 #endif
 
   if (ThisTask == 0) {
@@ -156,9 +161,12 @@ int main(int argc, char **argv) {
   }
 
 #ifdef TIMING
-  end=clock();
-  Time_Init = (end-start)/(double)CLOCKS_PER_SEC;
-  start=clock();
+  endcpu = (double)clock();
+  endwall = MPI_Wtime();
+  CpuTime_Init = (endcpu-startcpu)/(double)CLOCKS_PER_SEC;
+  WallTime_Init = endwall-startwall;
+  startcpu = (double)clock();
+  startwall = MPI_Wtime();
 #endif
 
   // Create the calculate the Zeldovich and 2LPT displacements and create the initial conditions
@@ -236,26 +244,39 @@ int main(int argc, char **argv) {
     sumz=0;
 
 #ifdef TIMING
-    start2 = clock();
+    startcpu2 = (double)clock();
+    startwall2 = MPI_Wtime();
 #endif
     Output(A,Dv,Dv2);
 #ifdef TIMING
-    end2 = clock();
-    Time_2LPToutput = (end-start)/(double)CLOCKS_PER_SEC;
+    endcpu2 = (double)clock();
+    endwall2 = MPI_Wtime();
+    CpuTime_2LPToutput = (endcpu-startcpu)/(double)CLOCKS_PER_SEC;
+    WallTime_2LPToutput = endwall-startwall;
 #endif
 
     // If this is the only output timestep then simply skip to the end
     if(Noutputs == 1) {
 #ifdef TIMING
-      end=clock();
-      Time_2LPT = (end-start)/(double)CLOCKS_PER_SEC;
-      Time_Move    = (double *)calloc(1, sizeof(double));
-      Time_PtoMesh = (double *)calloc(1, sizeof(double));
-      Time_Forces       = (double *)calloc(1, sizeof(double));
-      Time_MtoParticles = (double *)calloc(1, sizeof(double));
-      Time_Kick         = (double *)calloc(1, sizeof(double));
-      Time_Drift  = (double *)calloc(1, sizeof(double));
-      Time_Output = (double *)calloc(1, sizeof(double));
+      endcpu = (double)clock();
+      endwall = MPI_Wtime();
+      CpuTime_2LPT = (endcpu-startcpu)/(double)CLOCKS_PER_SEC;
+      CpuTime_Move    = (double *)calloc(1, sizeof(double));
+      CpuTime_PtoMesh = (double *)calloc(1, sizeof(double));
+      CpuTime_Forces       = (double *)calloc(1, sizeof(double));
+      CpuTime_MtoParticles = (double *)calloc(1, sizeof(double));
+      CpuTime_Kick         = (double *)calloc(1, sizeof(double));
+      CpuTime_Drift  = (double *)calloc(1, sizeof(double));
+      CpuTime_Output = (double *)calloc(1, sizeof(double));
+      WallTime_2LPT = endwall-startwall;
+      WallTime_Move    = (double *)calloc(1, sizeof(double));
+      WallTime_PtoMesh = (double *)calloc(1, sizeof(double));
+      WallTime_Forces       = (double *)calloc(1, sizeof(double));
+      WallTime_MtoParticles = (double *)calloc(1, sizeof(double));
+      WallTime_Kick         = (double *)calloc(1, sizeof(double));
+      WallTime_Drift  = (double *)calloc(1, sizeof(double));
+      WallTime_Output = (double *)calloc(1, sizeof(double));
+
 #endif
       goto finalize;
     }
@@ -292,8 +313,10 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef TIMING
-  end=clock();
-  Time_2LPT = (end -start)/(double)CLOCKS_PER_SEC;
+  endcpu = (double)clock();
+  endwall = MPI_Wtime();
+  CpuTime_2LPT = (endcpu -startcpu)/(double)CLOCKS_PER_SEC;
+  WallTime_2LPT = endwall-startwall;
   int nstepstot = 0;
 #ifdef LIGHTCONE
   for (i=NoutputStart;i<Noutputs;i++) {
@@ -306,13 +329,20 @@ int main(int argc, char **argv) {
       nstepstot += OutputList[i].Nsteps;
     }
   }
-  Time_Move    = (double *)calloc(nstepstot, sizeof(double));
-  Time_PtoMesh = (double *)calloc(nstepstot, sizeof(double));
-  Time_Forces       = (double *)calloc(nstepstot, sizeof(double));
-  Time_MtoParticles = (double *)calloc(nstepstot, sizeof(double));
-  Time_Kick         = (double *)calloc(nstepstot, sizeof(double));
-  Time_Drift  = (double *)calloc(nstepstot, sizeof(double));
-  Time_Output = (double *)calloc(nstepstot, sizeof(double));
+  CpuTime_Move    = (double *)calloc(nstepstot, sizeof(double));
+  CpuTime_PtoMesh = (double *)calloc(nstepstot, sizeof(double));
+  CpuTime_Forces       = (double *)calloc(nstepstot, sizeof(double));
+  CpuTime_MtoParticles = (double *)calloc(nstepstot, sizeof(double));
+  CpuTime_Kick         = (double *)calloc(nstepstot, sizeof(double));
+  CpuTime_Drift  = (double *)calloc(nstepstot, sizeof(double));
+  CpuTime_Output = (double *)calloc(nstepstot, sizeof(double));
+  WallTime_Move    = (double *)calloc(nstepstot, sizeof(double));
+  WallTime_PtoMesh = (double *)calloc(nstepstot, sizeof(double));
+  WallTime_Forces       = (double *)calloc(nstepstot, sizeof(double));
+  WallTime_MtoParticles = (double *)calloc(nstepstot, sizeof(double));
+  WallTime_Kick         = (double *)calloc(nstepstot, sizeof(double));
+  WallTime_Drift  = (double *)calloc(nstepstot, sizeof(double));
+  WallTime_Output = (double *)calloc(nstepstot, sizeof(double));
 #endif
 
   if(ThisTask == 0) {
@@ -401,12 +431,15 @@ int main(int argc, char **argv) {
       /**********************************************************************************************/
 
 #ifdef TIMING
-      start=clock();
+      startcpu = (double)clock();
+      startwall = MPI_Wtime();
 #endif
       Kick(AI,AF,A,Di);
 #ifdef TIMING
-      end=clock();
-      Time_Kick[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;
+      endcpu = (double)clock();
+      endwall = MPI_Wtime();
+      CpuTime_Kick[timeSteptot-1] = (endcpu-startcpu)/(double)CLOCKS_PER_SEC;
+      WallTime_Kick[timeSteptot-1] = endwall-startwall;
 #endif
 
 #ifndef LIGHTCONE
@@ -428,12 +461,15 @@ int main(int argc, char **argv) {
         Dv2 = growthD2v(A);  // dD_{2lpt}/dy
 
 #ifdef TIMING
-        start=clock();
+        startcpu = (double)clock();
+        startwall = MPI_Wtime();
 #endif
         Output(A,Dv,Dv2);
 #ifdef TIMING
-        end=clock();
-        Time_Output[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;
+        endcpu = (double)clock();
+        endwall = MPI_Wtime();
+        CpuTime_Output[timeSteptot-1] = (endcpu-startcpu)/(double)CLOCKS_PER_SEC;
+        WallTime_Output[timeSteptot-1] = endwall-startwall;
 #endif
 
         // If we have reached the last output timestep we skip to the end
@@ -458,12 +494,15 @@ int main(int argc, char **argv) {
         sumDz=0;
 
 #ifdef TIMING
-        start=clock();
+        startcpu = (double)clock();
+        startwall = MPI_Wtime();
 #endif
         Kick(AI,AF,A,Di);
 #ifdef TIMING
-        end=clock();
-        Time_Kick[timeSteptot-1] += (end-start)/(double)CLOCKS_PER_SEC;
+        endcpu = (double)clock();
+        endwall = MPI_Wtime();
+        CpuTime_Kick[timeSteptot-1] += (endcpu-startcpu)/(double)CLOCKS_PER_SEC;
+        WallTime_Kick[timeSteptot-1] += endwall-startwall;
 #endif
       }
 
@@ -479,7 +518,8 @@ int main(int argc, char **argv) {
       }
 
 #ifdef TIMING
-      start = clock();
+      startcpu = (double)clock();
+      endcpu = MPI_Wtime();
 #endif
 #ifdef LIGHTCONE
       if (i > 0) {
@@ -491,8 +531,10 @@ int main(int argc, char **argv) {
       Drift(A,AFF,AF,Di,Di2);
 #endif
 #ifdef TIMING
-      end=clock();
-      Time_Drift[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;
+      endcpu = (double)clock();
+      endwall = MPI_Wtime();
+      CpuTime_Drift[timeSteptot-1] = (endcpu-startcpu)/(double)CLOCKS_PER_SEC;
+      WallTime_Drift[timeSteptot-1] = endwall-startwall;
 #endif
 
       // Step in time
@@ -526,12 +568,15 @@ int main(int argc, char **argv) {
 
 #ifdef LIGHTCONE
 #ifdef TIMING
-  start = clock();
+  startcpu = (double)clock();
+  startwall = MPI_Wtime();
 #endif
   Output_Info_Lightcone();
 #ifdef TIMING
-  end = clock();
-  Time_Output[timeSteptot-1] += (end-start)/(double)CLOCKS_PER_SEC;
+  endcpu = (double)clock();
+  endwall = MPI_Wtime();
+  CpuTime_Output[timeSteptot-1] += (endcpu-startcpu)/(double)CLOCKS_PER_SEC;
+  WallTime_Output[timeSteptot-1] += endwall-startwall;
 #endif
 #endif
 
@@ -700,8 +745,9 @@ void Output(double A, double Dv, double Dv2) {
         sprintf(buf, "%s/%s_z%dp%03d.%d", OutputDir, FileBase, (int)Z, (int)rint((Z-(int)Z)*1000), ThisTask);
         if(!(fp = fopen(buf, "w"))) {
           printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-          FatalError((char *)"main.c", 697);
+          FatalError((char *)"main.c", 746);
         }
+        fflush(stdout);
 #ifdef GADGET_STYLE
         // Gadget header stuff
         for(k = 0; k < 6; k++) {
@@ -840,8 +886,9 @@ void Output_Info(double A) {
     sprintf(buf, "%s/%s_z%dp%03d.info", OutputDir, FileBase, (int)Z, (int)rint((Z-(int)Z)*1000));
     if(!(fp = fopen(buf, "w"))) {
       printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-      FatalError((char *)"main.c", 837);
+      FatalError((char *)"main.c", 886);
     }
+    fflush(stdout);
     fprintf(fp, "#    FILENUM      XMIN         YMIN        ZMIN         XMAX         YMAX         ZMAX         NPART    \n");
     double y0 = 0.0;
     double z0 = 0.0;
@@ -869,70 +916,135 @@ void Output_Timing(void) {
   int i;
 
   if (ThisTask == 0) {
-    sprintf(buf, "%s/%s_timing_0.dat", OutputDir, FileBase);
+    sprintf(buf, "%s/%s_cputime_0.dat", OutputDir, FileBase);
     if(!(fp = fopen(buf, "w"))) {
       printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-      FatalError((char *)"main.c", 869);
+      FatalError((char *)"main.c", 918);
     }
+    fflush(stdout);
     fprintf(fp, "Initialisation Time:\n");
-    fprintf(fp, "%12.6lf\n\n", Time_Init);
+    fprintf(fp, "%12.6lf\n\n", CpuTime_Init);
     fprintf(fp, "2LPT Time        (Non_Gaussian Kernel        Output):\n");
-    fprintf(fp, "%12.6lf     %12.6lf     %12.6lf\n\n", Time_2LPT, Time_2LPTng, Time_2LPToutput);
+    fprintf(fp, "%12.6lf     %12.6lf     %12.6lf\n\n", CpuTime_2LPT, CpuTime_2LPTng, CpuTime_2LPToutput);
     fprintf(fp, "Timestep Times:\n");
     fprintf(fp, "Move          PtoMesh          Forces          MtoParticles          Kick           Drift           Output\n");
     for (i=0; i<timeSteptot; i++) {
       fprintf(fp, "%12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf\n", 
-                   Time_Move[i], Time_PtoMesh[i], Time_Forces[i], Time_MtoParticles[i], Time_Kick[i], Time_Drift[i], Time_Output[i]);
+                   CpuTime_Move[i], CpuTime_PtoMesh[i], CpuTime_Forces[i], CpuTime_MtoParticles[i], CpuTime_Kick[i], CpuTime_Drift[i], CpuTime_Output[i]);
     }
     fclose(fp);
-    MPI_Reduce(MPI_IN_PLACE, &Time_Init, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(MPI_IN_PLACE, &Time_2LPT, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
-    MPI_Reduce(MPI_IN_PLACE, &Time_2LPTng, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);   
-    MPI_Reduce(MPI_IN_PLACE, &Time_2LPToutput, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
-    MPI_Reduce(MPI_IN_PLACE, &(Time_Move[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
-    MPI_Reduce(MPI_IN_PLACE, &(Time_PtoMesh[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(MPI_IN_PLACE, &(Time_Forces[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);         
-    MPI_Reduce(MPI_IN_PLACE, &(Time_MtoParticles[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
-    MPI_Reduce(MPI_IN_PLACE, &(Time_Kick[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
-    MPI_Reduce(MPI_IN_PLACE, &(Time_Drift[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
-    MPI_Reduce(MPI_IN_PLACE, &(Time_Output[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    sprintf(buf, "%s/%s_timing_all.dat", OutputDir, FileBase);
+    sprintf(buf, "%s/%s_walltime_0.dat", OutputDir, FileBase);
     if(!(fp = fopen(buf, "w"))) {
       printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-      FatalError((char *)"main.c", 869);
+      FatalError((char *)"main.c", 934);
     }
+    fflush(stdout);
     fprintf(fp, "Initialisation Time:\n");
-    fprintf(fp, "%12.6lf\n\n", Time_Init);
+    fprintf(fp, "%12.6lf\n\n", WallTime_Init);
     fprintf(fp, "2LPT Time        (Non_Gaussian Kernel        Output):\n");
-    fprintf(fp, "%12.6lf     %12.6lf     %12.6lf\n\n", Time_2LPT, Time_2LPTng, Time_2LPToutput);
+    fprintf(fp, "%12.6lf     %12.6lf     %12.6lf\n\n", WallTime_2LPT, WallTime_2LPTng, WallTime_2LPToutput);
     fprintf(fp, "Timestep Times:\n");
     fprintf(fp, "Move          PtoMesh          Forces          MtoParticles          Kick           Drift           Output\n");
     for (i=0; i<timeSteptot; i++) {
       fprintf(fp, "%12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf\n", 
-                   Time_Move[i], Time_PtoMesh[i], Time_Forces[i], Time_MtoParticles[i], Time_Kick[i], Time_Drift[i], Time_Output[i]);
+                   WallTime_Move[i], WallTime_PtoMesh[i], WallTime_Forces[i], WallTime_MtoParticles[i], WallTime_Kick[i], WallTime_Drift[i], WallTime_Output[i]);
+    }
+    fclose(fp);
+    MPI_Reduce(MPI_IN_PLACE, &CpuTime_Init, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(MPI_IN_PLACE, &CpuTime_2LPT, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(MPI_IN_PLACE, &CpuTime_2LPTng, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);   
+    MPI_Reduce(MPI_IN_PLACE, &CpuTime_2LPToutput, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(MPI_IN_PLACE, &(CpuTime_Move[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(MPI_IN_PLACE, &(CpuTime_PtoMesh[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(MPI_IN_PLACE, &(CpuTime_Forces[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);         
+    MPI_Reduce(MPI_IN_PLACE, &(CpuTime_MtoParticles[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(MPI_IN_PLACE, &(CpuTime_Kick[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(MPI_IN_PLACE, &(CpuTime_Drift[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(MPI_IN_PLACE, &(CpuTime_Output[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(MPI_IN_PLACE, &WallTime_Init, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(MPI_IN_PLACE, &WallTime_2LPT, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(MPI_IN_PLACE, &WallTime_2LPTng, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);   
+    MPI_Reduce(MPI_IN_PLACE, &WallTime_2LPToutput, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(MPI_IN_PLACE, &(WallTime_Move[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(MPI_IN_PLACE, &(WallTime_PtoMesh[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(MPI_IN_PLACE, &(WallTime_Forces[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);         
+    MPI_Reduce(MPI_IN_PLACE, &(WallTime_MtoParticles[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(MPI_IN_PLACE, &(WallTime_Kick[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(MPI_IN_PLACE, &(WallTime_Drift[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(MPI_IN_PLACE, &(WallTime_Output[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    sprintf(buf, "%s/%s_cputime_all.dat", OutputDir, FileBase);
+    if(!(fp = fopen(buf, "w"))) {
+      printf("\nERROR: Can't write in file '%s'.\n\n", buf);
+      FatalError((char *)"main.c", 972);
+    }
+    fflush(stdout);
+    fprintf(fp, "Initialisation Time:\n");
+    fprintf(fp, "%12.6lf\n\n", CpuTime_Init);
+    fprintf(fp, "2LPT Time        (Non_Gaussian Kernel        Output):\n");
+    fprintf(fp, "%12.6lf     %12.6lf     %12.6lf\n\n", CpuTime_2LPT, CpuTime_2LPTng, CpuTime_2LPToutput);
+    fprintf(fp, "Timestep Times:\n");
+    fprintf(fp, "Move          PtoMesh          Forces          MtoParticles          Kick           Drift           Output\n");
+    for (i=0; i<timeSteptot; i++) {
+      fprintf(fp, "%12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf\n", 
+                   CpuTime_Move[i], CpuTime_PtoMesh[i], CpuTime_Forces[i], CpuTime_MtoParticles[i], CpuTime_Kick[i], CpuTime_Drift[i], CpuTime_Output[i]);
+    }
+    fclose(fp);
+    sprintf(buf, "%s/%s_walltime_all.dat", OutputDir, FileBase);
+    if(!(fp = fopen(buf, "w"))) {
+      printf("\nERROR: Can't write in file '%s'.\n\n", buf);
+      FatalError((char *)"main.c", 988);
+    }
+    fflush(stdout);
+    fprintf(fp, "Initialisation Time:\n");
+    fprintf(fp, "%12.6lf\n\n", WallTime_Init);
+    fprintf(fp, "2LPT Time        (Non_Gaussian Kernel        Output):\n");
+    fprintf(fp, "%12.6lf     %12.6lf     %12.6lf\n\n", WallTime_2LPT, WallTime_2LPTng, WallTime_2LPToutput);
+    fprintf(fp, "Timestep Times:\n");
+    fprintf(fp, "Move          PtoMesh          Forces          MtoParticles          Kick           Drift           Output\n");
+    for (i=0; i<timeSteptot; i++) {
+      fprintf(fp, "%12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf     %12.6lf\n", 
+                   WallTime_Move[i], WallTime_PtoMesh[i], WallTime_Forces[i], WallTime_MtoParticles[i], WallTime_Kick[i], WallTime_Drift[i], WallTime_Output[i]);
     }
     fclose(fp);
   } else {
-    MPI_Reduce(&Time_Init, &Time_Init, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&Time_2LPT, &Time_2LPT, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
-    MPI_Reduce(&Time_2LPTng, &Time_2LPTng, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);   
-    MPI_Reduce(&Time_2LPToutput, &Time_2LPToutput, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
-    MPI_Reduce(&(Time_Move[0]), &(Time_Move[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
-    MPI_Reduce(&(Time_PtoMesh[0]), &(Time_PtoMesh[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&(Time_Forces[0]), &(Time_Forces[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);         
-    MPI_Reduce(&(Time_MtoParticles[0]), &(Time_MtoParticles[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
-    MPI_Reduce(&(Time_Kick[0]), &(Time_Kick[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
-    MPI_Reduce(&(Time_Drift[0]), &(Time_Drift[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
-    MPI_Reduce(&(Time_Output[0]), &(Time_Output[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);                     
+    MPI_Reduce(&CpuTime_Init, &CpuTime_Init, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&CpuTime_2LPT, &CpuTime_2LPT, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(&CpuTime_2LPTng, &CpuTime_2LPTng, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);   
+    MPI_Reduce(&CpuTime_2LPToutput, &CpuTime_2LPToutput, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(&(CpuTime_Move[0]), &(CpuTime_Move[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(&(CpuTime_PtoMesh[0]), &(CpuTime_PtoMesh[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&(CpuTime_Forces[0]), &(CpuTime_Forces[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);         
+    MPI_Reduce(&(CpuTime_MtoParticles[0]), &(CpuTime_MtoParticles[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(&(CpuTime_Kick[0]), &(CpuTime_Kick[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(&(CpuTime_Drift[0]), &(CpuTime_Drift[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(&(CpuTime_Output[0]), &(CpuTime_Output[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&WallTime_Init, &WallTime_Init, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&WallTime_2LPT, &WallTime_2LPT, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(&WallTime_2LPTng, &WallTime_2LPTng, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);   
+    MPI_Reduce(&WallTime_2LPToutput, &WallTime_2LPToutput, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(&(WallTime_Move[0]), &(WallTime_Move[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);     
+    MPI_Reduce(&(WallTime_PtoMesh[0]), &(WallTime_PtoMesh[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&(WallTime_Forces[0]), &(WallTime_Forces[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);         
+    MPI_Reduce(&(WallTime_MtoParticles[0]), &(WallTime_MtoParticles[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(&(WallTime_Kick[0]), &(WallTime_Kick[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(&(WallTime_Drift[0]), &(WallTime_Drift[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);          
+    MPI_Reduce(&(WallTime_Output[0]), &(WallTime_Output[0]), timeSteptot, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);                         
   }
 
-  free(Time_Move);
-  free(Time_PtoMesh);
-  free(Time_Forces);
-  free(Time_MtoParticles);
-  free(Time_Kick);
-  free(Time_Drift);
-  free(Time_Output);
+  free(CpuTime_Move);
+  free(CpuTime_PtoMesh);
+  free(CpuTime_Forces);
+  free(CpuTime_MtoParticles);
+  free(CpuTime_Kick);
+  free(CpuTime_Drift);
+  free(CpuTime_Output);
+  free(WallTime_Move);
+  free(WallTime_PtoMesh);
+  free(WallTime_Forces);
+  free(WallTime_MtoParticles);
+  free(WallTime_Kick);
+  free(WallTime_Drift);
+  free(WallTime_Output);
 
 }
 #endif

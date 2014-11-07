@@ -35,6 +35,7 @@ void read_outputs(void) {
 
   Noutputs=0;
   if((fd = fopen(OutputRedshiftFile, "r"))) {
+    fflush(stdout);
     while(fgets(buf,500,fd)) Noutputs++;
     fclose(fd);
 
@@ -42,6 +43,7 @@ void read_outputs(void) {
  
     Noutputs = 0;
     fd = fopen(OutputRedshiftFile, "r");
+    fflush(stdout);
     while(fgets(buf,500,fd)) {
       int nsteps;
       double red;
@@ -271,6 +273,7 @@ void read_parameterfile(char * fname) {
 #endif
 
   if((fd = fopen(fname, "r"))) {
+    fflush(stdout);
     while(!feof(fd)) {
       buf[0] = 0;
       fgets(buf, 500, fd);
@@ -281,26 +284,26 @@ void read_parameterfile(char * fname) {
       for(i = 0, j = -1; i < nt; i++) {
         if(strcmp(buf1, tag[i]) == 0)  {
           j = i;
-	  tag[i][0] = 0;
-	  break;
-	}
+	      tag[i][0] = 0;
+	      break;
+	    }
       }
       
       if(j >= 0) {
-	switch (id[j]) {
-	  case FLOAT:
-	    *((double *) addr[j]) = atof(buf2);
-	    break;
-	  case STRING:
-	    strcpy((char *)addr[j], buf2);
-	    break;
-	  case INT:
-	    *((int *) addr[j]) = atoi(buf2);
-	    break;
-	}
+	    switch (id[j]) {
+	      case FLOAT:
+	        *((double *) addr[j]) = atof(buf2);
+	        break;
+	      case STRING:
+	        strcpy((char *)addr[j], buf2);
+	        break;
+	      case INT:
+	        *((int *) addr[j]) = atoi(buf2);
+	        break;
+	    }
       } else {
         if(ThisTask == 0) fprintf(stdout,"\nERROR: In file %s:  Tag '%s' not allowed or multiple defined.\n\n",fname,buf1);
-	errorFlag = 1;
+	    errorFlag = 1;
       }
     }
     fclose(fd);

@@ -113,15 +113,16 @@ struct part_data * P;
 
 // Variables for timing
 #ifdef TIMING
-double Time_Init;                                 // Initialization time (run parameters, power spectrum, FFTs)
-double Time_2LPT, Time_2LPTng, Time_2LPToutput;   // 2LPT time, including non-Gaussian kernel calculation and output of initial conditions (if necessary)
-double * Time_Move;                               // Moving the particle between processors
-double * Time_PtoMesh;           // Calculating the density 
-double * Time_Forces;            // Calculating the forces
-double * Time_MtoParticles;      // Assigning displacement to particles
-double * Time_Kick;              // Kicking the particles
-double * Time_Drift;             // Drifting the particles
-double * Time_Output;            // Outputting the particles (if necessary. If lightcone then this is the time during Drift_Lightcone)
+double CpuTime_Init, WallTime_Init;                         // Initialization time (run parameters, power spectrum, FFTs)
+double CpuTime_2LPT, CpuTime_2LPTng, CpuTime_2LPToutput;    // 2LPT time, including non-Gaussian kernel calculation and output of initial conditions (if necessary)
+double WallTime_2LPT, WallTime_2LPTng, WallTime_2LPToutput; // 2LPT time, including non-Gaussian kernel calculation and output of initial conditions (if necessary)
+double * CpuTime_Move, * WallTime_Move;                     // Moving the particle between processors
+double * CpuTime_PtoMesh, * WallTime_PtoMesh;           // Calculating the density 
+double * CpuTime_Forces, * WallTime_Forces;             // Calculating the forces
+double * CpuTime_MtoParticles, * WallTime_MtoParticles; // Assigning displacement to particles
+double * CpuTime_Kick, * WallTime_Kick;                 // Kicking the particles
+double * CpuTime_Drift, * WallTime_Drift;               // Drifting the particles
+double * CpuTime_Output, * WallTime_Output;             // Outputting the particles (if necessary. If lightcone then this is the time during Drift_Lightcone)
 #endif
 
 // Simulation variables

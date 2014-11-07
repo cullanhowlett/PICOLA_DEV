@@ -32,19 +32,23 @@ void GetDisplacements(void) {
 
   int j;
 #ifdef TIMING
-  double start, end;
+  double startcpu, endcpu;
+  double startwall, endwall;
 #endif
 
   // First we check whether all the particles are on the correct processor after the last time step/
   // original 2LPT displacement and move them if not
   if (ThisTask == 0) printf("Moving particles across task boundaries...\n");
 #ifdef TIMING
-  start = clock();
+  startcpu = (double)clock();
+  startwall = MPI_Wtime();
 #endif
   MoveParticles();
 #ifdef TIMING
-  end=clock();
-  Time_Move[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;  
+  endcpu = (double)clock();
+  endwall = MPI_Wtime();
+  CpuTime_Move[timeSteptot-1] = (endcpu-startcpu)/(double)CLOCKS_PER_SEC;  
+  WallTime_Move[timeSteptot-1] = endwall-startwall;
 #endif
 
 #ifdef MEMORY_MODE
@@ -60,12 +64,15 @@ void GetDisplacements(void) {
   // Then we do the Cloud-in-Cell assignment to get the density grid and FFT it.  
   if (ThisTask == 0) printf("Calculating density using Cloud-in-Cell...\n");
 #ifdef TIMING
-  start = clock();
+  startcpu = (double)clock();
+  startwall = MPI_Wtime();
 #endif
   PtoMesh();
 #ifdef TIMING
-  end=clock();
-  Time_PtoMesh[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;  
+  endcpu = (double)clock();
+  endwall = MPI_Wtime();
+  CpuTime_PtoMesh[timeSteptot-1] = (endcpu-startcpu)/(double)CLOCKS_PER_SEC;  
+  WallTime_PtoMesh[timeSteptot-1] = endwall-startwall;
 #endif
 
 #ifdef MEMORY_MODE
@@ -90,12 +97,15 @@ void GetDisplacements(void) {
   // the vector (grad grad^{-2} density) on a grid.
   if (ThisTask == 0) printf("Calculating forces...\n");
 #ifdef TIMING
-  start = clock();
+  startcpu = (double)clock();
+  startwall = MPI_Wtime();
 #endif
   Forces();
 #ifdef TIMING
-  end=clock();
-  Time_Forces[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;  
+  endcpu = (double)clock();
+  endwall = MPI_Wtime();
+  CpuTime_Forces[timeSteptot-1] = (endcpu-startcpu)/(double)CLOCKS_PER_SEC;  
+  WallTime_Forces[timeSteptot-1] = endwall-startwall;
 #endif 
 
 #ifdef MEMORY_MODE
@@ -113,12 +123,15 @@ void GetDisplacements(void) {
   // Now find the accelerations at the particle positions using 3-linear interpolation. 
   if (ThisTask == 0) printf("Calculating accelerations...\n");
 #ifdef TIMING
-  start = clock();
+  startcpu = (double)clock();
+  startwall = MPI_Wtime();
 #endif
   MtoParticles();
 #ifdef TIMING
-  end=clock();
-  Time_MtoParticles[timeSteptot-1] = (end-start)/(double)CLOCKS_PER_SEC;  
+  endcpu = (double)clock();
+  endwall = MPI_Wtime();
+  CpuTime_MtoParticles[timeSteptot-1] = (endcpu-startcpu)/(double)CLOCKS_PER_SEC;  
+  WallTime_MtoParticles[timeSteptot-1] = endwall-startwall;
 #endif
 
 #ifdef MEMORY_MODE
@@ -203,7 +216,7 @@ void MoveParticles(void) {
                 if (send_count_left >= send_count_max) {
                   printf("\nERROR: Number of particles to be sent left on task %d is greater than send_count_max\n", ThisTask);
                   printf("       You must increase the size of the buffer region.\n\n");
-                  FatalError((char *)"auxPM.c", 206);
+                  FatalError((char *)"auxPM.c", 219);
                 }
               }
             } else {
@@ -218,7 +231,7 @@ void MoveParticles(void) {
                 if (send_count_right >= send_count_max) {
                   printf("\nERROR: Number of particles to be sent right on task %d is greater than send_count_max\n", ThisTask);
                   printf("       You must increase the size of the buffer region.\n\n");
-                  FatalError((char *)"auxPM.c", 221);
+                  FatalError((char *)"auxPM.c", 234);
                 }
               }
             }
@@ -266,7 +279,7 @@ void MoveParticles(void) {
     if (NumPart+recv_count_left+recv_count_right > Local_np*Nsample*Nsample*Buffer) {
       printf("\nERROR: Number of particles to be recieved on task %d is greater than available space\n", ThisTask);
       printf("       You must increase the size of the buffer region.\n\n");
-      FatalError((char *)"auxPM.c", 269);
+      FatalError((char *)"auxPM.c", 282);
     }
 
     // Copy across the new particles and store them at the end (of the memory). Then modify NumPart to include them.
@@ -605,7 +618,7 @@ size_t my_fwrite(void *ptr, size_t size, size_t nmemb, FILE * stream) {
   if((nwritten = fwrite(ptr, size, nmemb, stream)) != nmemb) {
     printf("\nERROR: I/O error (fwrite) on task=%d has occured.\n\n", ThisTask);
     fflush(stdout);
-    FatalError((char *)"auxPM.c", 608);
+    FatalError((char *)"auxPM.c", 621);
   }
   return nwritten;
 }

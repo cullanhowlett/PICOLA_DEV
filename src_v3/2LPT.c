@@ -184,6 +184,10 @@ void displacement_fields(void) {
   double t_of_k;
   double twb, phig, Beta;
   complex_kind *(cpot);
+#ifdef TIMING
+  double startcpu, endcpu;
+  double startwall, endwall;
+#endif
 #endif
 
 // Parameters for generic non-gaussianity
@@ -216,7 +220,7 @@ void displacement_fields(void) {
 
   gsl_rng_set(random_generator, Seed);
 
-  if(!(seedtable = (unsigned int *)malloc(Nmesh * Nmesh * sizeof(unsigned int)))) FatalError((char *)"2LPT.c", 219);
+  if(!(seedtable = (unsigned int *)malloc(Nmesh * Nmesh * sizeof(unsigned int)))) FatalError((char *)"2LPT.c", 223);
 
   for(i = 0; i < Nmesh / 2; i++) {
     for(j = 0; j < i; j++)     seedtable[i * Nmesh + j] = (unsigned int)(0x7fffffff * gsl_rng_uniform(random_generator));
@@ -368,8 +372,8 @@ void displacement_fields(void) {
 #else
 
 #ifdef TIMING
-  double start, end;
-  start = clock();
+  startcpu = (double)clock();
+  startwall = MPI_Wtime();
 #endif  
 
   if(ThisTask == 0) {
@@ -527,7 +531,7 @@ void displacement_fields(void) {
       if(ThisTask == 0) printf("Adjusting ker0 = - (kerA + kerB), ker0=%f, kerA=%f, kerB=%f\n", ker0,kerA,kerB);
     } else {
       if(ThisTask == 0) printf("\nERROR: ker0 + kerA + kerB does not equal 0\n"); 
-      FatalError((char *)"2LPT.c", 530);
+      FatalError((char *)"2LPT.c", 534);
     }
 
     if(ThisTask == 0) printf("Values: %lf %lf %lf %lf\n",kerCoef,ker0,kerA,kerB);
@@ -1120,8 +1124,10 @@ void displacement_fields(void) {
   free(cpot);
 
 #ifdef TIMING
-  end = clock();
-  Time_2LPTng = (end-start)/(double)CLOCKS_PER_SEC;
+  endcpu = (double)clock();
+  endwall = MPI_Wtime();
+  CpuTime_2LPTng = (endcpu-startcpu)/(double)CLOCKS_PER_SEC;
+  WallTime_2LPTng = endwall-startwall;
 #endif
 
 #endif
@@ -1190,11 +1196,11 @@ void displacement_fields(void) {
   if(ThisTask == 0) printf("Fourier transforming displacement gradient...\n");
   for(i = 0; i < 6; i++) {
 #ifdef SINGLE_PRECISION
-    Inverse_plan = fftwf_mpi_plan_dft_c2r_3d(Nmesh,Nmesh,Nmesh,cdigrad[i],digrad[i],MPI_COMM_WORLD,FFTW_ESTIMATE);
+    Inverse_plan = fftwf_mpi_plan_dft_c2r_3d(Nmesh,Nmesh,Nmesh,cdigrad[i],digrad[i],MPI_COMM_WORLD,FFTW_MEASURE);
     fftwf_execute(Inverse_plan);
     fftwf_destroy_plan(Inverse_plan);
 #else
-    Inverse_plan = fftw_mpi_plan_dft_c2r_3d(Nmesh,Nmesh,Nmesh,cdigrad[i],digrad[i],MPI_COMM_WORLD,FFTW_ESTIMATE);
+    Inverse_plan = fftw_mpi_plan_dft_c2r_3d(Nmesh,Nmesh,Nmesh,cdigrad[i],digrad[i],MPI_COMM_WORLD,FFTW_MEASURE);
     fftw_execute(Inverse_plan);
     fftw_destroy_plan(Inverse_plan);
 #endif

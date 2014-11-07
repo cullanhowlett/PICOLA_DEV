@@ -38,6 +38,8 @@ void read_kernel_table(void) {
     if (ThisTask == 0) printf("\nERROR: Can't read input kernel values in file '%s'.\n", buf);
     FatalError((char *)"kernel.c", 39);
   }
+  printf("%d, %d\n",ThisTask, fileno(fd));
+  fflush(stdout);
 
   NKernelTable = 0;
   do {
@@ -63,6 +65,8 @@ void read_kernel_table(void) {
     if (ThisTask == 0) printf("\nERROR: Can't read kernel input values in file '%s'.\n", buf);
     FatalError((char *)"kernel.c", 64);
   }
+  printf("%d, %d\n",ThisTask, fileno(fd));
+  fflush(stdout);
 
   NKernelTable = 0;
   do {

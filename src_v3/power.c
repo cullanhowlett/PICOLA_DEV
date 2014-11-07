@@ -75,6 +75,7 @@ void read_transfer_table(void) {
     if (ThisTask == 0) printf("\nERROR: Can't read input transfer function  in file '%s'.\n\n", buf);
     FatalError((char *)"power.c", 76);
   }
+  fflush(stdout);
 
   NTransferTable = 0;
   do {
@@ -100,6 +101,7 @@ void read_transfer_table(void) {
     if (ThisTask == 0) printf("\nERROR: Can't read input transfer function in file '%s'.\n\n", buf);
     FatalError((char *)"power.c", 101);
   }
+  fflush(stdout);
 
   NTransferTable = 0;
   do {
@@ -254,6 +256,7 @@ void read_power_table(void) {
     if (ThisTask == 0) printf("\nERROR: Can't read input power spectrum in file '%s'.\n\n", buf);
     FatalError((char *)"power.c", 255);
   }
+  fflush(stdout);
 
   NPowerTable = 0;
   do {
@@ -279,6 +282,7 @@ void read_power_table(void) {
     if (ThisTask == 0) printf("\nERROR: Can't read input power spectrum in file '%s'.\n\n", buf);
     FatalError((char *)"power.c", 280);
   }
+  fflush(stdout);
 
   NPowerTable = 0;
   kmin = 2 * PI / 0.0001 ;  // 10000 h/Mpc
