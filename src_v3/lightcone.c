@@ -172,8 +172,8 @@ double nearest_dist(double px, double py, double ix, double iy, double jx, doubl
   double dist1, dist2;
   double dist_line_old, dist_line_new;
 
-  dist_line_old = 0.0;
-  dist_line_new = 0.0;
+  dist_line_old = 1.0e30;
+  dist_line_new = 1.0e30;
 
   // Check the 4 line segments of the face of the replicate that is contained on the plane. For each necessary line segment we compute 
   // the distance, 'dist1', of the projection of the projected origin on the plane onto an infinite line containing the line segment (2D -> 1D).
@@ -224,7 +224,11 @@ double nearest_dist(double px, double py, double ix, double iy, double jx, doubl
   // Find the shortest distance to any of the line segments
   if (dist_line_old > dist_line_new) dist_line_old = dist_line_new;
   
-  return dist_line_old;
+  if (dist_line_old > 9.9e29) {
+    return 0.0;
+  } else {
+    return dist_line_old;
+  }
 
 }
 
@@ -266,7 +270,8 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
   gsl_spline * da1_spline, * da2_spline, * dyyy_spline;                                // Spline fits to the exit-time lookup tables
   gsl_interp_accel * da1_acc, * da2_acc, * dyyy_acc;
 #ifdef TIMING
-  double start, end;
+  double startcpu, endcpu;
+  double startwall, endwall;
 #endif 
 
   if (StdDA == 0) {
@@ -380,7 +385,7 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
       if((Delta_Pos[0] > boundary) || (Delta_Pos[1] > boundary) || (Delta_Pos[2] > boundary)) {
         printf("\nERROR: Particle displacement greater than boundary for lightcone replicate estimate.\n");
         printf("       increase boundary condition in lightcone.c (line 56)\n\n");
-      FatalError((char *)"lightcone.c", 383);
+      FatalError((char *)"lightcone.c", 384);
       }
 
       // Loop over all replicates
@@ -445,12 +450,15 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
     
     if (outputflag == blockmaxlenglob) {
 #ifdef TIMING
-      start = clock();
+      startcpu = (double)clock();
+      startwall = MPI_Wtime();
 #endif
       Output_Lightcone(pc, blockmaxlen, block);
 #ifdef TIMING
-      end = clock();
-      Time_Output[timeSteptot-1] += (end-start)/(double)CLOCK_PER_SEC;
+      endcpu = (double)clock();
+      endwall = MPI_Wtime();
+      CpuTime_Output[timeSteptot-1] += (endcpu-startcpu)/(double)CLOCKS_PER_SEC;
+      WallTime_Output[timeSteptot-1] += endwall-startwall;
 #endif
       outputflag = 0;
       for (i=0; i<(Nrep_neg_x+Nrep_pos_x+1)*(Nrep_neg_y+Nrep_pos_y+1)*(Nrep_neg_z+Nrep_pos_z+1); i++) pc[i] = 0;
@@ -460,12 +468,15 @@ void Drift_Lightcone(double A, double AFF, double AF, double Di, double Di2) {
 
   if (outputflag > 0) {
 #ifdef TIMING
-    start = clock();
+    startcpu = (double)clock();
+    startwall = MPI_Wtime();
 #endif
     Output_Lightcone(pc, blockmaxlen, block);
 #ifdef TIMING
-    end = clock();
-    Time_Output[timeSteptot-1] += (end-start)/(double)CLOCK_PER_SEC;
+    endcpu = (double)clock();
+    endwall = MPI_Wtime();
+    CpuTime_Output[timeSteptot-1] += (endcpu-startcpu)/(double)CLOCKS_PER_SEC;
+    WallTime_Output[timeSteptot-1] += endwall-startwall;
 #endif
   }
   free(pc);
@@ -517,14 +528,16 @@ void Output_Lightcone(unsigned int * pc, unsigned int blockmaxlen, float * block
                   // Overwrite any pre-existing output files otherwise we'll append onto the end of them.
                   if(!(fp = fopen(buf, "w"))) {
                     printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-                    FatalError((char *)"lightcone.c", 520);
+                    FatalError((char *)"lightcone.c", 527);
                   }
+                  fflush(stdout);
                   writeflag[coord] = 1;
                 } else {
                   if(!(fp = fopen(buf, "a"))) {
                     printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-                    FatalError((char *)"lightcone.c", 526);
+                    FatalError((char *)"lightcone.c", 533);
                   }
+                  fflush(stdout);
                 }
 
 #ifdef UNFORMATTED
@@ -574,8 +587,9 @@ void Output_Info_Lightcone(void) {
     sprintf(buf, "%s/%s_lightcone.info", OutputDir, FileBase);
     if(!(fp = fopen(buf, "w"))) {
       printf("\nERROR: Can't write in file '%s'.\n\n", buf);
-      FatalError((char *)"lightcone.c", 577);
+      FatalError((char *)"lightcone.c", 584);
     }
+    fflush(stdout);
     fprintf(fp, "#    FILENUM      XMIN         YMIN        ZMIN         XMAX         YMAX         ZMAX         NPART    \n");
   }
 
