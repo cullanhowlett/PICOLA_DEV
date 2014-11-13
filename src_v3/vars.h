@@ -193,15 +193,16 @@ extern struct part_data {
 
 // Variables for timing
 #ifdef TIMING
-extern double Time_Init;                                // Initialization time (run parameters, power spectrum, FFTs)
-extern double Time_2LPT, Time_2LPTng, Time_2LPToutput;   // 2LPT time, including non-Gaussian kernel calculation and output of initial conditions (if necessary)
-extern double * Time_Move;                              // Moving the particle between processors
-extern double * Time_PtoMesh;      // Calculating the density 
-extern double * Time_Forces;       // Calculating the forces
-extern double * Time_MtoParticles; // Assigning displacement to particles
-extern double * Time_Kick;         // Kicking the particles
-extern double * Time_Drift;        // Drifting the particles
-extern double * Time_Output;       // Outputting the particles (if necessary. If lightcone then this is the time during Drift_Lightcone)
+extern double CpuTime_Init, WallTime_Init;                         // Initialization time (run parameters, power spectrum, FFTs)
+extern double CpuTime_2LPT, CpuTime_2LPTng, CpuTime_2LPToutput;    // 2LPT time, including non-Gaussian kernel calculation and output of initial conditions (if necessary)
+extern double WallTime_2LPT, WallTime_2LPTng, WallTime_2LPToutput; // 2LPT time, including non-Gaussian kernel calculation and output of initial conditions (if necessary)
+extern double * CpuTime_Move, * WallTime_Move;                     // Moving the particle between processors
+extern double * CpuTime_PtoMesh, * WallTime_PtoMesh;           // Calculating the density 
+extern double * CpuTime_Forces, * WallTime_Forces;             // Calculating the forces
+extern double * CpuTime_MtoParticles, * WallTime_MtoParticles; // Assigning displacement to particles
+extern double * CpuTime_Kick, * WallTime_Kick;                 // Kicking the particles
+extern double * CpuTime_Drift, * WallTime_Drift;               // Drifting the particles
+extern double * CpuTime_Output, * WallTime_Output;             // Outputting the particles (if necessary. If lightcone then this is the time during Drift_Lightcone)
 #endif
 
 // Simulation variables
